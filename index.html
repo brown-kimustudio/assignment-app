@@ -1,0 +1,3227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>소속별 이미지 과제 + 운영관리 + 백업 MVP v7</title>
+  <style>
+    :root {
+      --bg: #050505;
+      --surface: #101010;
+      --surface-2: #161616;
+      --line: rgba(255,255,255,0.08);
+      --text: #f7f7f2;
+      --muted: #b8b8b0;
+      --accent: #52e4d0;
+      --accent-soft: rgba(82,228,208,0.12);
+      --ok: #45d293;
+      --warn: #ffca62;
+      --danger: #ff6d85;
+      --max: 1320px;
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(82,228,208,0.08), transparent 22%),
+        radial-gradient(circle at top left, rgba(255,255,255,0.03), transparent 20%),
+        var(--bg);
+      color: var(--text);
+    }
+    button, input, textarea, select { font: inherit; }
+    a { color: inherit; }
+    .hidden { display: none !important; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+    .auth {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      align-items: center;
+      gap: 26px;
+      padding: 28px 0;
+    }
+    .hero, .panel, .card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border-radius: 28px;
+    }
+    .hero { padding: 40px; }
+    .eyebrow {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .hero h1 {
+      margin: 0 0 14px;
+      font-size: clamp(34px, 5vw, 66px);
+      line-height: 0.98;
+      letter-spacing: -0.05em;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 17px;
+      max-width: 700px;
+    }
+    .hero-grid {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .mini {
+      padding: 18px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+    }
+    .mini strong { display: block; margin-bottom: 8px; }
+    .mini span { color: var(--muted); font-size: 14px; line-height: 1.65; }
+
+    .panel { padding: 28px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 18px; }
+    .tab {
+      flex: 1; padding: 12px 14px; border-radius: 14px; cursor: pointer;
+      border: 1px solid var(--line); background: rgba(255,255,255,0.04); color: var(--text); font-weight: 800;
+    }
+    .tab.active { background: var(--accent-soft); color: var(--accent); }
+    .field { margin-bottom: 14px; }
+    label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
+    .input, .select, textarea {
+      width: 100%; border-radius: 14px; border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04); color: var(--text); padding: 13px 14px; outline: none;
+    }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .btn {
+      border: 1px solid transparent; border-radius: 999px; padding: 13px 18px;
+      cursor: pointer; font-weight: 800; background: transparent; color: var(--text);
+    }
+    .btn.primary { background: white; color: black; }
+    .btn.accent { background: var(--accent); color: #04211d; }
+    .btn.outline { border-color: rgba(255,255,255,0.16); }
+    .btn.danger { background: rgba(255,109,133,0.12); color: #ffc8d2; border-color: rgba(255,109,133,0.18); }
+    .btn.big {
+      min-width: 190px; min-height: 64px; font-size: 18px; letter-spacing: -0.02em;
+      box-shadow: 0 10px 30px rgba(82,228,208,0.08);
+    }
+    .msg {
+      margin-top: 14px; padding: 14px 16px; border-radius: 16px;
+      background: rgba(82,228,208,0.10); border: 1px solid rgba(82,228,208,0.16); color: #cbfff6; font-size: 14px;
+    }
+
+    .app { min-height: 100vh; display: grid; grid-template-columns: 280px 1fr; }
+    .sidebar {
+      border-right: 1px solid var(--line); padding: 24px 18px; background: rgba(255,255,255,0.02);
+      position: sticky; top: 0; height: 100vh;
+    }
+    .brand { padding: 12px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+    .brand strong { display: block; font-size: 18px; }
+    .brand span { color: var(--muted); font-size: 12px; }
+    .menu-title {
+      color: var(--muted); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; margin: 14px 12px 10px;
+    }
+    .menu-btn {
+      width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center;
+      padding: 14px; border-radius: 14px; border: 1px solid transparent; background: transparent; color: var(--text); cursor: pointer; margin-bottom: 6px;
+    }
+    .menu-btn.active, .menu-btn:hover { background: rgba(255,255,255,0.05); border-color: var(--line); }
+    .pill { font-size: 11px; padding: 5px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+    .session { margin-top: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,0.03); }
+    .session strong { display: block; margin-bottom: 6px; }
+    .session span { color: var(--muted); font-size: 13px; }
+
+    .main { padding: 26px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    .topbar h2 { margin: 0 0 6px; font-size: 34px; letter-spacing: -0.04em; }
+    .topbar p { margin: 0; color: var(--muted); }
+    .hero-band {
+      padding: 26px; border-radius: 24px; background: linear-gradient(135deg, rgba(82,228,208,0.10), rgba(255,255,255,0.02)); border: 1px solid var(--line); margin-bottom: 18px;
+    }
+    .attendance-hero {
+      display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; align-items: stretch;
+    }
+    .attendance-cta {
+      padding: 26px; border-radius: 24px; border: 1px solid rgba(82,228,208,0.16);
+      background: linear-gradient(135deg, rgba(82,228,208,0.16), rgba(255,255,255,0.03));
+    }
+    .attendance-cta h3 { margin: 0 0 8px; font-size: 28px; letter-spacing: -0.03em; }
+    .attendance-cta p { margin: 0; color: var(--muted); line-height: 1.8; }
+    .attendance-status {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    }
+    .status-box {
+      padding: 18px; border-radius: 18px; background: rgba(255,255,255,0.03); border: 1px solid var(--line);
+    }
+    .status-box.summary { grid-column: span 2; }
+    .status-box .label { color: var(--muted); font-size: 13px; }
+    .status-box .value { font-size: 24px; font-weight: 900; margin-top: 10px; }
+    .status-box .line { margin-top: 8px; color: var(--text); font-size: 13px; line-height: 1.7; }
+    .status-box .line.muted { color: var(--muted); }
+
+    .grid-2, .grid-3, .grid-4 { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .card { padding: 22px; border-radius: 22px; }
+    .stat .label { color: var(--muted); font-size: 13px; }
+    .stat .value { font-size: 34px; font-weight: 900; margin: 10px 0 8px; }
+    .stat .sub { color: var(--accent); font-size: 13px; }
+    .assignment-card, .list-item {
+      padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,0.03);
+    }
+    .assignment-card h4, .list-item h4 { margin: 0 0 10px; font-size: 20px; }
+    .assignment-card p, .list-item p { margin: 0; color: var(--muted); line-height: 1.75; }
+    .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+    .badge {
+      display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 800;
+      background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--line);
+    }
+    .badge.ok { color: var(--ok); background: rgba(69,210,147,0.10); border-color: rgba(69,210,147,0.18); }
+    .badge.warn { color: var(--warn); background: rgba(255,202,98,0.10); border-color: rgba(255,202,98,0.18); }
+    .badge.danger { color: var(--danger); background: rgba(255,109,133,0.10); border-color: rgba(255,109,133,0.18); }
+    .badge.accent { color: var(--accent); background: var(--accent-soft); border-color: rgba(82,228,208,0.18); }
+    .empty {
+      padding: 28px; border: 1px dashed rgba(255,255,255,0.16); border-radius: 18px; text-align: center; color: var(--muted);
+    }
+    .limit-box {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;
+    }
+    .limit-item {
+      padding: 16px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--line);
+    }
+    .limit-item .label { color: var(--muted); font-size: 12px; }
+    .limit-item .value { font-size: 24px; font-weight: 900; margin-top: 8px; }
+    .thumbs {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+    }
+    .thumb-wrap { display: inline-flex; flex-direction: column; }
+    .thumb-link { display: block; text-decoration: none; }
+    .thumb {
+      width: 90px; height: 90px; border-radius: 14px; object-fit: cover; border: 1px solid var(--line); background: #0d0d0d;
+    }
+    .thumb.assignment { width: 120px; height: 120px; }
+    .thumb.assignment.large { width: 180px; height: 180px; border-radius: 18px; }
+    .thumb.assignment.hero { width: min(100%, 520px); height: 520px; border-radius: 28px; }
+    .thumb-caption { font-size: 11px; color: var(--muted); margin-top: 6px; max-width: 540px; word-break: break-all; }
+    .hero-preview-wrap { padding: 22px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); margin-bottom: 16px; }
+    .hero-preview-stage { display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
+    .hero-preview-stage .thumbs { gap: 16px; }
+    .leave-table-note { margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .ops-item { border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 16px; background: rgba(255,255,255,0.02); margin-bottom: 14px; }
+    .template-card textarea { min-height: 140px; }
+    .toolbar-card { padding: 18px; border-radius: 18px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); margin-bottom: 16px; }
+    .download-link {
+      display: inline-flex; align-items: center; justify-content: center; margin-top: 6px;
+      padding: 6px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.12); text-decoration: none;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left; font-size: 14px; vertical-align: top; }
+    th { color: var(--muted); font-weight: 700; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .small { font-size: 12px; color: var(--muted); }
+    .assignment-sheet {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
+      padding: 22px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    }
+    .sheet-kicker {
+      display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px;
+      background: rgba(255, 202, 98, 0.12); color: #ffd977; font-size: 12px; font-weight: 800; border: 1px solid rgba(255, 202, 98, 0.18);
+    }
+    .sheet-title { margin: 14px 0 10px; font-size: 28px; line-height: 1.35; }
+    .sheet-desc { color: var(--muted); line-height: 1.8; margin: 0; }
+    .rule-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; margin-top: 16px; }
+    .rule-stack { display: grid; gap: 12px; }
+    .rule-item, .guide-note {
+      padding: 16px; border-radius: 18px; background: rgba(255,255,255,0.03); border: 1px solid var(--line);
+    }
+    .rule-item strong, .guide-note strong { display: block; margin-bottom: 6px; font-size: 14px; }
+    .qty-guide { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .qty-chip {
+      display: inline-flex; align-items: center; justify-content: center; padding: 10px 12px; border-radius: 14px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--line); font-size: 12px; font-weight: 800; color: #f8f8f8;
+    }
+    .qty-chip.accent { background: rgba(255, 202, 98, 0.12); border-color: rgba(255, 202, 98, 0.18); color: #ffe49d; }
+    .keyword-box {
+      margin-top: 18px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,0.035); border: 1px solid var(--line);
+    }
+    .keyword-box h5 { margin: 0 0 10px; font-size: 15px; }
+    .keyword-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .keyword-pill {
+      display: inline-flex; align-items: center; padding: 7px 10px; border-radius: 999px; font-size: 12px; font-weight: 800;
+      color: var(--accent); background: var(--accent-soft); border: 1px solid rgba(82,228,208,0.18);
+    }
+
+    @media (max-width: 1180px) {
+      .auth, .app, .grid-4, .grid-3, .grid-2, .hero-grid, .attendance-hero, .limit-box { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+    @media (max-width: 720px) {
+      .wrap { padding: 0 16px; }
+      .main { padding: 16px; }
+      .hero, .panel { padding: 24px; }
+      .btn.big { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div id="authView" class="wrap auth">
+    <section class="hero">
+      <span class="eyebrow">v29 · 연차 승인 제한 · 비밀번호 UI 정리 · YG 근무기준 수정 · 개인별 제출 기준</span>
+      <h1>직원은 대시보드에서만 출퇴근하고<br>관리자는 기록을 수정하고<br>모든 데이터는 백업으로 남긴다</h1>
+      <p>
+        이번 버전에서는 구글 슬라이드로 배포하던 과제 형식을 참고해서, 웹에서도 한눈에 읽히는 주간 과제 보드 형태로 정리했다.
+        과제 제목, 진행 규칙, 수량 가이드, 키워드 느낌의 안내, 예시 이미지, 제출 영역이 한 카드 안에서 자연스럽게 보이도록 바꿨다.
+      </p>
+      <div class="hero-grid">
+        <div class="mini"><strong>1. 업로드 제한은 안내용</strong><span>하루에 몰아서 제출해도 저장 가능</span></div>
+        <div class="mini"><strong>2. 주차 과제 즉시 노출</strong><span>직원 대시보드에 이번 주 과제를 바로 표시</span></div>
+        <div class="mini"><strong>3. 근무요일·시간 설정</strong><span>관리자가 직원별 스케줄을 지정하고 그 시간에 출퇴근</span></div>
+        <div class="mini"><strong>4. 백업/다운로드 강화</strong><span>과제·제출·출퇴근 기록을 각각 백업</span></div>
+      </div>
+      <div class="msg">
+        데모 계정 · 관리자 <b>관리자 / admin1234</b> · 직원 <b>김수연 / 12341234</b>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="tabs">
+        <button class="tab active" data-tab="login">로그인</button>
+        <button class="tab" data-tab="info">현재 규칙</button>
+      </div>
+      <div id="loginTab">
+        <form id="loginForm">
+          <div class="field">
+            <label>이름</label>
+            <input class="input" name="loginId" type="text" required placeholder="직원은 이름으로 로그인 / 관리자는 이름 또는 이메일" />
+          </div>
+          <div class="field">
+            <label>비밀번호</label>
+            <input class="input" name="password" type="password" required placeholder="비밀번호 입력" />
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" type="submit">로그인</button>
+            <button class="btn outline" type="button" id="fillAdmin">관리자 자동입력</button>
+            <button class="btn outline" type="button" id="fillWorker">직원 자동입력</button>
+          </div>
+        </form>
+      </div>
+      <div id="infoTab" class="hidden">
+        <div class="list-item">
+          <h4>과제 규칙</h4>
+          <p>직원은 자기 소속 회사 과제만 확인 가능합니다. 관리자 과제는 설명과 예시 이미지 최대 12장을 함께 올릴 수 있고, 주간 기준으로 자동 정리된다.</p>
+        </div>
+        <div class="list-item" style="margin-top:12px;">
+          <h4>제출 및 백업 규칙</h4>
+          <p>직원별 주간 제출 기준은 관리자 설정값에 따라 다를 수 있고, 필요하면 하루에 모아서 제출할 수 있다. 관리자는 제출 이미지와 과제, 출퇴근·연차 기록을 각각 백업하고 내려받을 수 있습니다.</p>
+        </div>
+      </div>
+      <div class="msg" id="authMsg">슬라이드형 과제 배포 방식을 참고해서 웹 과제 시스템을 더 깔끔한 주간 과제 보드 형태로 정리한 버전이야.</div>
+    </section>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>Assignment Image MVP v29</strong>
+        <span id="brandSub">관리자 다운로드/저장 포함</span>
+      </div>
+      <div class="menu-title">메뉴</div>
+      <button class="menu-btn active" id="dashboardMenu" data-page="dashboardPage"><span>대시보드</span><span class="pill">HOME</span></button>
+      <button class="menu-btn hidden" id="workerAssignmentsMenu" data-page="workerAssignmentsPage"><span>주차별 과제 보기</span><span class="pill">WEEK</span></button>
+      <button class="menu-btn hidden" id="accountMenu" data-page="accountPage"><span>내 계정 관리</span><span class="pill">MY</span></button>
+      <button class="menu-btn hidden" id="assignmentsMenu" data-page="assignmentsPage"><span>과제 등록</span><span class="pill">CREATE</span></button>
+      <button class="menu-btn hidden" id="submissionMenu" data-page="submissionManagePage"><span>제출 과제 관리</span><span class="pill">CHECK</span></button>
+      <button class="menu-btn" data-page="attendancePage"><span>출퇴근 기록</span><span class="pill">TIME</span></button>
+      <button class="menu-btn hidden" id="adminMenu" data-page="adminPage"><span>직원 계정 관리</span><span class="pill">OPS</span></button>
+      <button class="menu-btn hidden" id="adminToolsMenu" data-page="adminToolsPage"><span>운영도구</span><span class="pill">TOOLS</span></button>
+      <div class="menu-title">현재 세션</div>
+      <div class="session">
+        <strong id="sessionName">-</strong>
+        <span id="sessionMeta">-</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn outline" id="resetBtn" type="button">데이터 초기화</button>
+        <button class="btn danger" id="logoutBtn" type="button">로그아웃</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section id="dashboardPage" class="page active">
+        <div class="topbar">
+          <div>
+            <h2 id="dashboardTitle">대시보드</h2>
+            <p id="dashboardDesc">직원만 이 화면에서 출퇴근 버튼을 사용</p>
+          </div>
+        </div>
+        <div class="attendance-hero">
+          <div class="attendance-cta">
+            <h3>오늘 출퇴근 · 연차</h3>
+            <p>이 화면에서 출근, 퇴근, 연차 신청까지 함께 처리하실 수 있습니다. 연차는 오늘이 아닌 미래 근무일도 미리 신청할 수 있고, 관리자 승인 후 출퇴근 집계와 백업에 자동 반영됩니다.</p>
+            <div class="btn-row" id="attendanceActionRow" style="margin-top:22px; align-items:flex-end;">
+              <button class="btn accent big" id="dashboardCheckInBtn" type="button">출근</button>
+              <button class="btn outline big" id="dashboardCheckOutBtn" type="button">퇴근</button>
+              <div class="field" style="margin:0; min-width:200px;">
+                <label>연차 날짜 선택</label>
+                <input class="input" type="date" id="annualLeaveDate">
+              </div>
+              <button class="btn danger big" id="dashboardAnnualLeaveBtn" type="button">연차 신청</button>
+            </div>
+            <div id="attendanceUploadArea" style="margin-top:14px;">
+              <div class="grid-2" style="gap:12px;">
+                <div class="field" style="margin-bottom:0;">
+                  <label>이미지 파일 제출</label>
+                  <input class="input" type="file" id="dashboardSubmitFiles" accept="image/*" multiple>
+                </div>
+                <div class="field" style="margin-bottom:0;">
+                  <label>이미지 제출 과제</label>
+                  <select class="select" id="dashboardAssignmentSelect"></select>
+                  <div class="small" id="dashboardSubmitGuide" style="margin-top:8px;">이번 주 과제를 선택한 뒤 이미지를 제출해 주세요.</div>
+                </div>
+              </div>
+              <div class="btn-row" style="margin-top:12px;">
+                <button class="btn primary" id="dashboardSubmitBtn" type="button">이미지 제출</button>
+              </div>
+            </div>
+            <div class="msg" id="dashboardAttendanceMsg">직원은 여기서 출퇴근, 연차 신청, 이미지 제출을 기록합니다.</div>
+          </div>
+          <div class="attendance-status" id="dashboardAttendanceStatus"></div>
+        </div>
+        <div class="hero-band" id="dashboardHero" style="margin-top:18px;"></div>
+        <div id="dashboardContent"></div>
+      </section>
+
+      <section id="workerAssignmentsPage" class="page">
+        <div class="topbar">
+          <div>
+            <h2>주차별 과제 보기</h2>
+            <p>전주 · 이번주 · 다음주 과제를 따로 보고, 필요한 주차 과제 이미지를 확인하거나 제출할 수 있습니다.</p>
+          </div>
+        </div>
+        <div class="toolbar-card">
+          <div class="grid-2">
+            <div class="field" style="margin-bottom:0;">
+              <label>조회 주차</label>
+              <select class="select" id="workerAssignmentWeekSelect" onchange="changeWorkerAssignmentWeek(this.value)"></select>
+            </div>
+            <div>
+              <label>주차 안내</label>
+              <div id="workerAssignmentWeekSummary" class="small" style="margin-top:10px;"></div>
+            </div>
+          </div>
+          <div class="msg" id="workerAssignmentWeekMsg">전주, 이번주, 다음주 과제를 분리해서 보고 필요한 주차 과제를 바로 제출할 수 있습니다.</div>
+        </div>
+        <div id="workerAssignmentWeekContent"></div>
+      </section>
+
+      <section id="accountPage" class="page">
+        <div class="topbar">
+          <div>
+            <h2>내 계정 관리</h2>
+            <p>직원 계정 비밀번호를 이 메뉴에서 별도로 변경합니다.</p>
+          </div>
+        </div>
+        <div id="workerAccountContent"></div>
+      </section>
+
+      <section id="assignmentsPage" class="page">
+        <div class="topbar">
+          <div>
+            <h2>과제 등록</h2>
+            <p>회사별 4개 과제틀만 유지하고, 이번 주/차주 과제를 같은 화면에서 수정·저장하는 예약형 화면</p>
+          </div>
+        </div>
+        <div class="toolbar-card">
+          <div class="grid-2">
+            <div class="field" style="margin-bottom:0;">
+              <label>편집 주차</label>
+              <select class="select" id="assignmentTemplateWeekSelect" onchange="changeAssignmentTemplateWeek(this.value)"></select>
+            </div>
+            <div>
+              <label>주차 안내</label>
+              <div id="assignmentTemplateSummary" class="small" style="margin-top:10px;"></div>
+            </div>
+          </div>
+          <div class="msg" id="assignmentMsg">회사별 4개 과제틀을 유지하고, 주차를 바꿔 차주 과제까지 미리 저장할 수 있습니다.</div>
+        </div>
+        <div id="assignmentLock"></div>
+        <div id="assignmentList" class="grid-2"></div>
+        <div class="card" style="margin-top:16px;">
+          <h3 style="margin-top:0;">선택 주차 저장 상태</h3>
+          <div id="assignmentBoardList" class="grid-2"></div>
+        </div>
+      </section>
+
+      <section id="submissionManagePage" class="page">
+        <div class="topbar">
+          <div>
+            <h2>제출 과제 관리</h2>
+            <p>직원이 제출한 과제를 확인하고, 선택한 주차 이미지를 이름 변경 후 한 번에 저장하는 전용 화면</p>
+          </div>
+        </div>
+        <div class="toolbar-card">
+          <div class="grid-2">
+            <div class="field" style="margin-bottom:0;">
+              <label>제출 주차 선택</label>
+              <select class="select" id="submissionManageWeekSelect" onchange="changeSubmissionManageWeek(this.value)"></select>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label>회사 선택</label>
+              <select class="select" id="submissionManageDepartmentFilter" onchange="changeSubmissionManageDepartment(this.value)">
+                <option value="ALL">전체 회사</option>
+                <option value="A">㈜키뮤 + 아이디룩</option>
+                <option value="B">㈜유진투자증권</option>
+                <option value="C">㈜와이지엔터테인먼트</option>
+                <option value="D">한국경제인협회</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <label>주차 요약</label>
+            <div id="submissionManageSummary" class="small" style="margin-top:10px;"></div>
+          </div>
+          <div class="btn-row" style="margin-top:14px;">
+            <button class="btn outline" type="button" onclick="markSubmissionWeek('확인완료', false)">선택 조건 전체 확인</button>
+            <button class="btn accent" type="button" onclick="markSubmissionWeek('저장완료', true)">선택 조건 전체 저장</button>
+          </div>
+          <div class="msg" id="submissionManageMsg">주차와 회사를 함께 선택하면 제출 이미지와 상태를 더 깔끔하게 관리할 수 있습니다.</div>
+        </div>
+        <div class="card" style="overflow:auto;">
+          <h3 style="margin-top:0;">제출된 이미지 과제 확인</h3>
+          <table>
+            <thead>
+              <tr><th>직원</th><th>소속</th><th>주차</th><th>필수/제출</th><th>이미지</th><th>상태</th><th>처리</th></tr>
+            </thead>
+            <tbody id="submissionTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="attendancePage" class="page">
+        <div class="topbar">
+          <div>
+            <h2>출퇴근 기록</h2>
+            <p>직원은 본인 기록 확인, 관리자는 직원 기록 확인·수정·저장을 여기서 처리</p>
+          </div>
+        </div>
+        <div class="card" id="workerAttendanceCard" style="overflow:auto;">
+          <div class="grid-2" style="gap:16px; align-items:end; margin-bottom:12px;">
+            <div>
+              <h3 style="margin:0;">내 출퇴근 · 연차 기록</h3>
+              <div class="small" id="workerAttendanceSummary" style="margin-top:8px;">이번 달 스케줄과 출퇴근/연차 처리 상태를 함께 확인합니다.</div>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label>조회 월</label>
+              <select class="select" id="workerAttendanceMonth" onchange="changeWorkerAttendanceMonth(this.value)"></select>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>날짜</th><th>요일</th><th>예정 스케줄</th><th>출근</th><th>퇴근</th><th>상태</th></tr>
+            </thead>
+            <tbody id="myAttendanceTable"></tbody>
+          </table>
+        </div>
+        <div class="card hidden" id="adminLeaveCard" style="margin-top:16px; overflow:auto;">
+          <h3 style="margin-top:0;">연차 신청 승인 관리</h3>
+          <table>
+            <thead>
+              <tr><th>이름</th><th>소속</th><th>날짜</th><th>요청 시간</th><th>상태</th><th>처리</th></tr>
+            </thead>
+            <tbody id="leaveRequestTable"></tbody>
+          </table>
+          <div class="leave-table-note">승인된 연차는 월별 출퇴근 백업과 전체 데이터 백업에 함께 저장됩니다.</div>
+        </div>
+        <div class="card hidden" id="adminAttendanceCard" style="margin-top:16px; overflow:auto;">
+          <div class="grid-2" style="gap:16px; align-items:end; margin-bottom:12px;">
+            <div>
+              <h3 style="margin:0;">직원 출퇴근 · 연차 전체 로그</h3>
+              <div class="small" id="adminAttendanceSummary" style="margin-top:8px;">회사와 조회 월을 바꾸면 해당 직원들의 예상 스케줄, 출퇴근, 연차 상태를 함께 확인할 수 있습니다.</div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px;">
+              <div class="field" style="margin-bottom:0;">
+                <label>회사</label>
+                <select class="select" id="attendanceDepartmentFilter" onchange="changeAdminAttendanceDepartment(this.value)">
+                  <option value="A">㈜키뮤 + 아이디룩</option>
+                  <option value="B">㈜유진투자증권</option>
+                  <option value="C">㈜와이지엔터테인먼트</option>
+                  <option value="D">한국경제인협회</option>
+                </select>
+              </div>
+              <div class="field" style="margin-bottom:0;">
+                <label>조회 월</label>
+                <select class="select" id="attendanceMonthFilter" onchange="changeAdminAttendanceMonth(this.value)"></select>
+              </div>
+              <div class="field" style="margin-bottom:0;">
+                <label>직원 선택</label>
+                <select class="select" id="attendanceWorkerFilter" onchange="changeAdminAttendanceWorker(this.value)"></select>
+              </div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>이름</th><th>소속</th><th>날짜</th><th>요일</th><th>예정 스케줄</th><th>출근</th><th>퇴근</th><th>상태</th><th>연차 처리 정보</th><th>수정</th></tr>
+            </thead>
+            <tbody id="attendanceAdminTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="adminPage" class="page">
+        <div class="topbar">
+          <div>
+            <h2>직원 계정 관리</h2>
+            <p>회사별 직원 계정, 비밀번호, 근무시간, 연차 현황을 이 화면에서 집중 관리합니다.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="grid-2">
+            <div>
+              <h3 style="margin-top:0;">관리 회사 선택</h3>
+              <div class="field" style="margin-bottom:0;">
+                <label>회사</label>
+                <select class="select" id="adminDepartmentFilter" onchange="changeAdminDepartment(this.value)">
+                  <option value="A">㈜키뮤 + 아이디룩</option>
+                  <option value="B">㈜유진투자증권</option>
+                  <option value="C">㈜와이지엔터테인먼트</option>
+                  <option value="D">한국경제인협회</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <h3 style="margin-top:0;">선택 회사 요약</h3>
+              <div id="adminDepartmentSummary" class="small"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <h3 style="margin-top:0;">직원 계정 + 스케줄 통합 관리</h3>
+          <p class="small" style="margin-top:0;">이름, 이메일, 비밀번호, 회사, 계정상태, 근무요일, 출퇴근시간, 연차 총 개수를 한 카드에서 같이 수정하고 연차 사용 현황도 바로 확인할 수 있습니다.</p>
+          <div id="workerOpsList"></div>
+        </div>
+      </section>
+
+      <section id="adminToolsPage" class="page">
+        <div class="topbar">
+          <div>
+            <h2>운영도구</h2>
+            <p>관리자 계정 관리, 신규 인원 등록, 회사 휴일 설정, 백업 기능을 이 메뉴로 분리했습니다.</p>
+          </div>
+        </div>
+
+        <div id="adminAccountSecurityCard"></div>
+
+        <div class="card" style="margin-top:16px;">
+          <h3 style="margin-top:0;">신규 인원 등록</h3>
+          <p class="small" style="margin-top:0;">관리자가 새 직원을 직접 추가하고, 회사/근무요일/출퇴근시간/연차 개수까지 한 번에 등록할 수 있습니다.</p>
+          <div class="grid-2">
+            <div class="field"><label>이름</label><input class="input" id="new-worker-name" placeholder="예: 홍길동"></div>
+            <div class="field"><label>이메일</label><input class="input" id="new-worker-email" placeholder="예: newworker@company.com"></div>
+            <div class="field"><label>비밀번호</label><input class="input" id="new-worker-password" value="12341234"></div>
+            <div class="field"><label>회사</label><select class="select" id="new-worker-category" onchange="applyNewWorkerDefaultsByCategory(this.value)"><option value="A">㈜키뮤 + 아이디룩</option><option value="B">㈜유진투자증권</option><option value="C">㈜와이지엔터테인먼트</option><option value="D">한국경제인협회</option></select></div>
+            <div class="field"><label>계정 상태</label><select class="select" id="new-worker-active"><option value="true">활성</option><option value="false">비활성</option></select></div>
+            <div class="field"><label>연차 총 개수</label><input class="input" type="number" min="0" id="new-worker-annualleave" value="0"></div>
+            <div class="field"><label>주간 제출 기준</label><input class="input" type="number" min="0" id="new-worker-weeklytarget" value="12"></div>
+            <div class="field" style="grid-column:1 / -1;"><label>근무요일</label><div class="small" style="line-height:1.8; color:var(--text);"><label style="display:inline-flex;align-items:center;margin-right:10px;margin-bottom:8px;"><input type="checkbox" id="new-worker-day-1" style="margin-right:6px;">월</label><label style="display:inline-flex;align-items:center;margin-right:10px;margin-bottom:8px;"><input type="checkbox" id="new-worker-day-2" checked style="margin-right:6px;">화</label><label style="display:inline-flex;align-items:center;margin-right:10px;margin-bottom:8px;"><input type="checkbox" id="new-worker-day-3" checked style="margin-right:6px;">수</label><label style="display:inline-flex;align-items:center;margin-right:10px;margin-bottom:8px;"><input type="checkbox" id="new-worker-day-4" checked style="margin-right:6px;">목</label><label style="display:inline-flex;align-items:center;margin-right:10px;margin-bottom:8px;"><input type="checkbox" id="new-worker-day-5" checked style="margin-right:6px;">금</label></div></div>
+            <div class="field"><label>출근 시간</label><input class="input" type="time" id="new-worker-start" value="10:00"></div>
+            <div class="field"><label>퇴근 시간</label><input class="input" type="time" id="new-worker-end" value="14:30"></div>
+          </div>
+          <div class="btn-row" style="margin-top:10px;"><button class="btn accent" type="button" onclick="addWorkerAccount()">신규 인원 등록</button></div>
+          <div class="msg" id="addWorkerMsg">새 직원을 등록하면 직원 계정 관리 목록과 로그인 계정에 바로 반영됩니다.</div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <h3 style="margin-top:0;">회사 휴일 관리</h3>
+          <p class="small" style="margin-top:0;">회사별 자체 휴일을 등록하면 해당 날짜는 직원 출퇴근 예정 스케줄에 휴일로 표시되고, 연차 신청도 막을 수 있습니다.</p>
+          <div class="grid-2">
+            <div class="field"><label>회사</label><select class="select" id="holiday-category"><option value="A">㈜키뮤 + 아이디룩</option><option value="B">㈜유진투자증권</option><option value="C">㈜와이지엔터테인먼트</option><option value="D">한국경제인협회</option></select></div>
+            <div class="field"><label>휴일 날짜</label><input class="input" type="date" id="holiday-date"></div>
+            <div class="field" style="grid-column:1 / -1;"><label>휴일 사유</label><input class="input" id="holiday-reason" placeholder="예: 창립기념일, 사내 행사, 임시 휴무"></div>
+          </div>
+          <div class="btn-row" style="margin-top:10px;"><button class="btn accent" type="button" onclick="addCompanyHoliday()">회사 휴일 등록</button></div>
+          <div class="msg" id="holidayMsg">등록된 회사 휴일은 선택한 회사 기준으로 아래 목록과 직원 출퇴근 예상 스케줄에 반영됩니다.</div>
+          <div id="companyHolidayList" style="margin-top:12px;"></div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <h3 style="margin-top:0;">백업 센터</h3>
+          <div class="grid-2">
+            <div class="list-item">
+              <h4>전체 데이터 백업</h4>
+              <p>회원, 과제, 제출, 출퇴근 전체 데이터를 한 번에 저장한다.</p>
+              <div id="backupSummary" class="small" style="margin:10px 0 12px;"></div>
+              <button class="btn accent" type="button" id="downloadAllBackupBtn">전체 백업 다운로드</button>
+            </div>
+            <div class="list-item">
+              <h4>월별 출퇴근 · 연차 백업</h4>
+              <p>직원 출퇴근 기록과 승인된 연차 현황을 월 단위 요약과 함께 정리합니다.</p>
+              <div class="field" style="margin-top:10px;">
+                <label>백업 월 선택</label>
+                <select class="select" id="attendanceBackupSelect"></select>
+              </div>
+              <button class="btn outline" type="button" id="downloadAttendanceBackupBtn">월별 출퇴근 · 연차 다운로드</button>
+            </div>
+            <div class="list-item">
+              <h4>주간 과제 이미지 백업</h4>
+              <p>관리자가 올린 주간 과제와 예시 이미지를 주차별로 정리한다.</p>
+              <div class="field" style="margin-top:10px;">
+                <label>백업 주차 선택</label>
+                <select class="select" id="assignmentBackupSelect"></select>
+              </div>
+              <button class="btn outline" type="button" id="downloadAssignmentBackupBtn">주간 과제 다운로드</button>
+            </div>
+            <div class="list-item">
+              <h4>주간 제출 이미지 백업</h4>
+              <p>직원들이 제출한 이미지 과제를 주차별로 정리해 내려받는다.</p>
+              <div class="field" style="margin-top:10px;">
+                <label>제출 백업 주차 선택</label>
+                <select class="select" id="submissionBackupSelect"></select>
+              </div>
+              <button class="btn outline" type="button" id="downloadSubmissionBackupBtn">주간 제출 다운로드</button>
+            </div>
+          </div>
+          <div class="msg" id="backupMsg">변경사항이 생길 때마다 백업 데이터가 자동 갱신된다.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const USERS_KEY = 'mvp_users_v9';
+    const ASSIGNMENTS_KEY = 'mvp_assignments_v9';
+    const SUBMISSIONS_KEY = 'mvp_submissions_v9';
+    const ATTENDANCE_KEY = 'mvp_attendance_v9';
+    const SESSION_KEY = 'mvp_session_v9';
+    const BACKUP_ALL_KEY = 'mvp_backup_all_v9';
+    const BACKUP_ATTENDANCE_MONTHLY_KEY = 'mvp_backup_attendance_monthly_v9';
+    const BACKUP_ASSIGNMENT_WEEKLY_KEY = 'mvp_backup_assignment_weekly_v9';
+    const BACKUP_SUBMISSION_WEEKLY_KEY = 'mvp_backup_submission_weekly_v9';
+    const HOLIDAYS_KEY = 'mvp_company_holidays_v20';
+
+    const categoryLabel = {
+      A: '㈜키뮤 + 아이디룩',
+      B: '㈜유진투자증권',
+      C: '㈜와이지엔터테인먼트',
+      D: '한국경제인협회'
+    };
+    const dayLabel = ['일','월','화','수','목','금','토'];
+    const scheduleCodeMap = {
+      '화1': { day: 2, start: '10:30', end: '12:00' },
+      '수1': { day: 3, start: '10:30', end: '12:00' },
+      '금1': { day: 5, start: '10:30', end: '12:00' },
+      '화2': { day: 2, start: '13:30', end: '15:00' },
+      '수2': { day: 3, start: '13:30', end: '15:00' },
+      '금2': { day: 5, start: '13:30', end: '15:00' },
+      '화3': { day: 2, start: '15:30', end: '17:00' },
+      '수3': { day: 3, start: '15:30', end: '17:00' },
+      '금3': { day: 5, start: '15:30', end: '17:00' }
+    };
+    function buildScheduleFromCodes(codes = []) {
+      const dailySchedules = {};
+      codes.filter(Boolean).forEach(code => {
+        const slot = scheduleCodeMap[code];
+        if (!slot) return;
+        const prev = dailySchedules[slot.day];
+        if (!prev) {
+          dailySchedules[slot.day] = { day: slot.day, start: slot.start, end: slot.end };
+          return;
+        }
+        if (slot.start < prev.start) prev.start = slot.start;
+        if (slot.end > prev.end) prev.end = slot.end;
+      });
+      const order = [1,2,3,4,5,6,0];
+      const workDays = Object.keys(dailySchedules).map(Number).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      const starts = workDays.map(day => dailySchedules[day].start).sort();
+      const ends = workDays.map(day => dailySchedules[day].end).sort();
+      return {
+        workDays,
+        workStart: starts[0] || '',
+        workEnd: ends[ends.length - 1] || '',
+        dailySchedules
+      };
+    }
+
+    function buildFixedSchedule(days = [], start = '', end = '') {
+      const dailySchedules = {};
+      days.forEach(day => {
+        dailySchedules[day] = { day, start, end };
+      });
+      return {
+        workDays: [...days],
+        workStart: start,
+        workEnd: end,
+        dailySchedules
+      };
+    }
+
+    const demoRef = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#52e4d0" offset="0"/>
+            <stop stop-color="#0f2d29" offset="1"/>
+          </linearGradient>
+        </defs>
+        <rect width="600" height="600" fill="url(#g)"/>
+        <circle cx="430" cy="170" r="90" fill="rgba(255,255,255,0.18)"/>
+        <rect x="70" y="330" width="460" height="120" rx="26" fill="rgba(255,255,255,0.12)"/>
+        <text x="70" y="120" fill="#05211d" font-size="42" font-family="Arial" font-weight="700">Reference Image</text>
+        <text x="70" y="388" fill="white" font-size="26" font-family="Arial">Design direction sample</text>
+      </svg>
+    `);
+
+    function today() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function nowText() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    function timeOnly() {
+      const d = new Date();
+      return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    function weekKey(date = new Date()) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2,'0')}`;
+    }
+    function monthKeyFromDateStr(dateStr = '') {
+      const raw = String(dateStr).slice(0, 7);
+      return /^\d{4}-\d{2}$/.test(raw) ? raw : today().slice(0, 7);
+    }
+    function weekKeyFromDateStr(dateStr = '') {
+      const raw = String(dateStr).slice(0, 10);
+      const [y, m, d] = raw.split('-').map(Number);
+      if (!y || !m || !d) return weekKey();
+      return weekKey(new Date(y, m - 1, d));
+    }
+    function load(key, fallback) {
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        localStorage.setItem(key, JSON.stringify(fallback));
+        return JSON.parse(JSON.stringify(fallback));
+      }
+      return JSON.parse(raw);
+    }
+    function save(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+    function loadSession() {
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }
+    function saveSession(value) {
+      if (!value) localStorage.removeItem(SESSION_KEY);
+      else localStorage.setItem(SESSION_KEY, JSON.stringify(value));
+    }
+    function escapeHtml(text='') {
+      return text
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;');
+    }
+
+    const seedUsers = (() => {
+      const result = [
+        { id: 1, name: '관리자', email: 'admin@company.com', password: 'admin1234', role: 'admin', category: '-', workDays: [], workStart: '', workEnd: '', dailySchedules: {}, annualLeaveTotal: 0, isActive: true }
+      ];
+      const workerSeed = [
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '김수연', days: [2,3,4,5], start: '13:00', end: '17:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '서준원', days: [2,3,4,5], start: '13:00', end: '17:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '이태규', days: [2,3,4,5], start: '13:00', end: '17:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '정태현', days: [2,3,4,5], start: '10:00', end: '14:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '김희주', days: [2,3,4,5], start: '10:00', end: '17:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '서문지윤', days: [2,3,4,5], start: '10:00', end: '14:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '송병헌', days: [2,3,4,5], start: '10:00', end: '14:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '송태양', days: [2,3,4,5], start: '13:00', end: '17:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '이호석', days: [2,3,4,5], start: '10:00', end: '14:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '최승찬', days: [2,3,4,5], start: '10:00', end: '14:30' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '권순우', days: [2,3,4,5], start: '10:00', end: '15:00' },
+        { category: 'A', company: '㈜키뮤 + 아이디룩', name: '김유나', days: [2,3,4,5], start: '13:00', end: '17:00' },
+
+        { category: 'B', company: '㈜유진투자증권', name: '김건우', days: [2,3,4,5], start: '08:00', end: '12:00' },
+        { category: 'B', company: '㈜유진투자증권', name: '김민수', days: [2,3,4,5], start: '08:00', end: '12:00' },
+        { category: 'B', company: '㈜유진투자증권', name: '김승민', days: [2,3,4,5], start: '08:00', end: '12:00' },
+        { category: 'B', company: '㈜유진투자증권', name: '김용연', days: [2,3,4,5], start: '08:00', end: '12:00' },
+        { category: 'B', company: '㈜유진투자증권', name: '김윤상', days: [2,3,4,5], start: '13:00', end: '17:00' },
+        { category: 'B', company: '㈜유진투자증권', name: '박재완', days: [2,3,4,5], start: '13:00', end: '17:00' },
+        { category: 'B', company: '㈜유진투자증권', name: '박창배', days: [2,3,4,5], start: '13:00', end: '17:00' },
+        { category: 'B', company: '㈜유진투자증권', name: '신유경', days: [2,3,4,5], start: '08:00', end: '12:00' },
+        { category: 'B', company: '㈜유진투자증권', name: '유경원', days: [2,3,4,5], start: '08:00', end: '12:00' },
+
+        { category: 'C', company: '㈜와이지엔터테인먼트', name: '류홍규', days: [1,2,3,4], start: '13:30', end: '18:00' },
+        { category: 'C', company: '㈜와이지엔터테인먼트', name: '이희창', days: [1,2,3,4], start: '13:30', end: '18:00' },
+        { category: 'C', company: '㈜와이지엔터테인먼트', name: '임형섭', days: [1,2,3,4], start: '13:30', end: '18:00' },
+        { category: 'C', company: '㈜와이지엔터테인먼트', name: '홍지원', days: [1,2,3,4], start: '13:30', end: '18:00' },
+        { category: 'C', company: '㈜와이지엔터테인먼트', name: '김명기', days: [1,2,3,4], start: '13:30', end: '18:00' },
+
+        { category: 'D', company: '한국경제인협회', name: '신상철', days: [2,3,4,5], start: '10:00', end: '14:30' }
+      ];
+      workerSeed.forEach((item, index) => {
+        const schedule = buildFixedSchedule(item.days, item.start, item.end);
+        result.push({
+          id: index + 2,
+          name: item.name,
+          email: `worker${index + 1}@company.com`,
+          password: '12341234',
+          role: 'worker',
+          category: item.category,
+          company: item.company,
+          workDays: schedule.workDays,
+          workStart: schedule.workStart,
+          workEnd: schedule.workEnd,
+          dailySchedules: schedule.dailySchedules,
+          annualLeaveTotal: 0,
+          weeklySubmissionTarget: Math.max(0, Math.min(4, schedule.workDays.length) * 3),
+          isActive: true
+        });
+      });
+      return result;
+    })();
+
+    const seedAssignments = [
+      { id: 101, title: '브랜드 무드보드 3장', description: '㈜키뮤 + 아이디룩 전용. 예시 이미지를 참고해서 브랜드 무드보드 이미지를 최대 3장 업로드.', dueDate: today(), category: 'A', createdAt: nowText(), createdBy: 1, referenceImages: [{name:'reference-a-1.svg', dataUrl: demoRef}] },
+      { id: 102, title: '콘텐츠 시안 3장', description: '㈜유진투자증권 전용. 예시 이미지를 참고해서 카드뉴스 또는 피드 시안을 최대 3장 업로드.', dueDate: today(), category: 'B', createdAt: nowText(), createdBy: 1, referenceImages: [{name:'reference-b-1.svg', dataUrl: demoRef}] },
+      { id: 103, title: 'UI 화면 캡처 3장', description: '㈜와이지엔터테인먼트 전용. 화면 설계안 이미지를 최대 3장 업로드.', dueDate: today(), category: 'C', createdAt: nowText(), createdBy: 1, referenceImages: [{name:'reference-c-1.svg', dataUrl: demoRef}] },
+      { id: 104, title: '배너 시안 3장', description: '한국경제인협회 전용. 배너 시안 이미지를 최대 3장 업로드.', dueDate: today(), category: 'D', createdAt: nowText(), createdBy: 1, referenceImages: [{name:'reference-d-1.svg', dataUrl: demoRef}] }
+    ];
+
+    let users = load(USERS_KEY, seedUsers);
+    let assignments = load(ASSIGNMENTS_KEY, seedAssignments);
+
+    function getDefaultWorkerSetupByCategory(category = 'A') {
+      if (category === 'C') {
+        return { workDays: [1,2,3,4], workStart: '13:30', workEnd: '18:00', weeklyTarget: 12 };
+      }
+      return { workDays: [2,3,4,5], workStart: '10:00', workEnd: '14:30', weeklyTarget: 12 };
+    }
+
+    function applyNewWorkerDefaultsByCategory(category = adminDepartmentFilter, preserveManual = false) {
+      const defaults = getDefaultWorkerSetupByCategory(category);
+      [1,2,3,4,5].forEach(day => {
+        const checkbox = document.getElementById(`new-worker-day-${day}`);
+        if (checkbox) checkbox.checked = defaults.workDays.includes(day);
+      });
+      const startEl = document.getElementById('new-worker-start');
+      const endEl = document.getElementById('new-worker-end');
+      const targetEl = document.getElementById('new-worker-weeklytarget');
+      if (startEl && (!preserveManual || !startEl.value)) startEl.value = defaults.workStart;
+      if (endEl && (!preserveManual || !endEl.value)) endEl.value = defaults.workEnd;
+      if (targetEl && (!preserveManual || !targetEl.value)) targetEl.value = String(defaults.weeklyTarget);
+    }
+
+    function migrateUsersForV29() {
+      let changed = false;
+      users = users.map(user => {
+        if (!user || user.role !== 'worker') return user;
+        const next = { ...user };
+        if (!Number.isFinite(Number(next.weeklySubmissionTarget))) {
+          next.weeklySubmissionTarget = Math.max(0, Math.min(4, next.workDays?.length || 0) * 3);
+          changed = true;
+        }
+        const workDays = Array.isArray(next.workDays) ? next.workDays.map(Number) : [];
+        const looksLikeOldYG = next.category === 'C'
+          && JSON.stringify(workDays) === JSON.stringify([1,2,3,5])
+          && (next.workStart || '') === '13:30'
+          && (next.workEnd || '') === '18:00';
+        if (looksLikeOldYG) {
+          const schedule = buildFixedSchedule([1,2,3,4], '13:30', '18:00');
+          next.workDays = schedule.workDays;
+          next.workStart = schedule.workStart;
+          next.workEnd = schedule.workEnd;
+          next.dailySchedules = schedule.dailySchedules;
+          changed = true;
+        }
+        return next;
+      });
+      if (changed) save(USERS_KEY, users);
+    }
+    migrateUsersForV29();
+    const commonSlidesUrl = 'https://docs.google.com/presentation/d/1jXsql7vifNxoq5Rjkfr5RxngPnmbZrokg7MBNcS3NOw/edit?usp=sharing';
+    const commonSlidesCapture = 'https://www.genspark.ai/api/files/s/E3JP8b88';
+    const commonAssignmentDescription = '1. 부채\n2. 복숭아\n3. 광주리\n4. 한옥\n\n상세 기준은 구글 슬라이드를 참고해 주세요: ' + commonSlidesUrl;
+    assignments = assignments.map(item => ({
+      ...item,
+      title: getAssignmentTitleByWeek(getAssignmentWeekValue(item)),
+      description: item.description || commonAssignmentDescription,
+      dueDate: item.dueDate || getAssignmentDefaultDueDate(getAssignmentWeekValue(item)),
+      referenceImages: item.referenceImages?.length ? item.referenceImages : [{ name: 'common-slides-brief.png', dataUrl: commonSlidesCapture }]
+    }));
+    save(ASSIGNMENTS_KEY, assignments);
+    let submissions = load(SUBMISSIONS_KEY, []);
+    let attendance = load(ATTENDANCE_KEY, []);
+    let companyHolidays = load(HOLIDAYS_KEY, []);
+    const WEEKDAY_ONLY = [1,2,3,4,5];
+    users = users.map(user => {
+      if (!user || user.role !== 'worker') return user;
+      const workDays = (Array.isArray(user.workDays) ? user.workDays : []).filter(day => WEEKDAY_ONLY.includes(day));
+      let dailySchedules = {};
+      Object.entries(user.dailySchedules || {}).forEach(([key, value]) => {
+        const day = Number(key);
+        if (!WEEKDAY_ONLY.includes(day)) return;
+        dailySchedules[day] = { ...(value || {}), day };
+      });
+      if (!Object.keys(dailySchedules).length && workDays.length && user.workStart && user.workEnd) {
+        dailySchedules = buildFixedSchedule(workDays, user.workStart, user.workEnd).dailySchedules;
+      }
+      return { ...user, workDays, dailySchedules };
+    });
+    save(USERS_KEY, users);
+    let session = loadSession();
+    let backupAll = load(BACKUP_ALL_KEY, {});
+    let attendanceBackups = load(BACKUP_ATTENDANCE_MONTHLY_KEY, {});
+    let assignmentBackups = load(BACKUP_ASSIGNMENT_WEEKLY_KEY, {});
+    let submissionBackups = load(BACKUP_SUBMISSION_WEEKLY_KEY, {});
+    let adminDepartmentFilter = 'A';
+    let submissionManageFilterWeek = '';
+    let submissionManageDepartmentFilter = 'ALL';
+    let assignmentTemplateWeekOffset = 0;
+    let workerAttendanceMonthFilter = today().slice(0, 7);
+    let adminAttendanceMonthFilter = today().slice(0, 7);
+    let adminAttendanceWorkerFilter = '';
+    let workerAssignmentViewWeek = getShiftedWeekKey(0);
+
+    const authView = document.getElementById('authView');
+    const appView = document.getElementById('appView');
+    const adminMenu = document.getElementById('adminMenu');
+
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-tab]').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('loginTab').classList.toggle('hidden', btn.dataset.tab !== 'login');
+        document.getElementById('infoTab').classList.toggle('hidden', btn.dataset.tab !== 'info');
+      });
+    });
+
+    document.getElementById('fillAdmin').onclick = () => {
+      const f = document.getElementById('loginForm');
+      f.loginId.value = '관리자';
+      f.password.value = 'admin1234';
+    };
+    document.getElementById('fillWorker').onclick = () => {
+      const f = document.getElementById('loginForm');
+      f.loginId.value = '김수연';
+      f.password.value = '12341234';
+    };
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const loginId = String(fd.get('loginId')).trim();
+      const loginLower = loginId.toLowerCase();
+      const password = String(fd.get('password')).trim();
+      const user = users.find(u => {
+        const workerMatch = u.role === 'worker' && u.name === loginId;
+        const adminMatch = u.role === 'admin' && (u.name === loginId || u.email.toLowerCase() === loginLower);
+        return (workerMatch || adminMatch) && u.password === password;
+      });
+      if (!user) {
+        document.getElementById('authMsg').textContent = '이름 또는 비밀번호가 맞지 않아.';
+        return;
+      }
+      if (user.isActive === false) {
+        document.getElementById('authMsg').textContent = '비활성화된 계정이라 로그인할 수 없어.';
+        return;
+      }
+      session = { userId: user.id };
+      saveSession(session);
+      enterApp();
+    });
+
+    document.getElementById('logoutBtn').onclick = () => {
+      session = null;
+      saveSession(null);
+      authView.classList.remove('hidden');
+      appView.classList.add('hidden');
+    };
+
+    document.getElementById('resetBtn').onclick = () => {
+      localStorage.removeItem(USERS_KEY);
+      localStorage.removeItem(ASSIGNMENTS_KEY);
+      localStorage.removeItem(SUBMISSIONS_KEY);
+      localStorage.removeItem(ATTENDANCE_KEY);
+      localStorage.removeItem(HOLIDAYS_KEY);
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(BACKUP_ALL_KEY);
+      localStorage.removeItem(BACKUP_ATTENDANCE_MONTHLY_KEY);
+      localStorage.removeItem(BACKUP_ASSIGNMENT_WEEKLY_KEY);
+      localStorage.removeItem(BACKUP_SUBMISSION_WEEKLY_KEY);
+      location.reload();
+    };
+
+    document.getElementById('downloadAllBackupBtn').onclick = () => {
+      syncBackups();
+      const data = load(BACKUP_ALL_KEY, {});
+      downloadJson(`all-data-backup-${today()}.json`, data);
+      document.getElementById('backupMsg').textContent = '전체 데이터 백업 파일을 다운로드했어.';
+    };
+    document.getElementById('downloadAttendanceBackupBtn').onclick = () => {
+      syncBackups();
+      const month = document.getElementById('attendanceBackupSelect').value;
+      const data = load(BACKUP_ATTENDANCE_MONTHLY_KEY, {});
+      if (!month || !data[month]) {
+        document.getElementById('backupMsg').textContent = '다운로드할 월별 출퇴근 백업이 없어.';
+        return;
+      }
+      downloadJson(`attendance-backup-${month}.json`, data[month]);
+      document.getElementById('backupMsg').textContent = `${month} 출퇴근 백업을 다운로드했어.`;
+    };
+    document.getElementById('downloadAssignmentBackupBtn').onclick = () => {
+      syncBackups();
+      const week = document.getElementById('assignmentBackupSelect').value;
+      const data = load(BACKUP_ASSIGNMENT_WEEKLY_KEY, {});
+      if (!week || !data[week]) {
+        document.getElementById('backupMsg').textContent = '다운로드할 주간 과제 백업이 없어.';
+        return;
+      }
+      downloadJson(`assignment-image-backup-${week}.json`, data[week]);
+      document.getElementById('backupMsg').textContent = `${week} 과제 이미지 백업을 다운로드했어.`;
+    };
+    document.getElementById('downloadSubmissionBackupBtn').onclick = () => {
+      syncBackups();
+      const week = document.getElementById('submissionBackupSelect').value;
+      const data = load(BACKUP_SUBMISSION_WEEKLY_KEY, {});
+      if (!week || !data[week]) {
+        document.getElementById('backupMsg').textContent = '다운로드할 주간 제출 백업이 없어.';
+        return;
+      }
+      downloadJson(`submission-image-backup-${week}.json`, data[week]);
+      document.getElementById('backupMsg').textContent = `${week} 제출 이미지 백업을 다운로드했어.`;
+    };
+
+    document.querySelectorAll('.menu-btn[data-page]').forEach(btn => {
+      btn.addEventListener('click', () => showPage(btn.dataset.page));
+    });
+
+    ['dashboardCheckInBtn'].forEach(id => {
+      document.getElementById(id).onclick = () => handleCheckIn();
+    });
+    ['dashboardCheckOutBtn'].forEach(id => {
+      document.getElementById(id).onclick = () => handleCheckOut();
+    });
+    ['dashboardAnnualLeaveBtn'].forEach(id => {
+      document.getElementById(id).onclick = () => requestAnnualLeave();
+    });
+    const annualLeaveDateInput = document.getElementById('annualLeaveDate');
+    if (annualLeaveDateInput) {
+      annualLeaveDateInput.onchange = () => {
+        const user = currentUser();
+        if (user && user.role === 'worker') {
+          normalizeLeaveDateSelection(user, true);
+          renderDashboard();
+        }
+      };
+    }
+    ['dashboardSubmitBtn'].forEach(id => {
+      document.getElementById(id).onclick = () => submitDashboardImages();
+    });
+
+    function handleCheckIn() {
+      const user = currentUser();
+      if (!user) return;
+      const gate = canCheckInNow(user);
+      if (!gate.ok) {
+        syncAttendanceMessage(gate.reason);
+        return;
+      }
+      const open = getOpenAttendance(user.id);
+      if (open) {
+        syncAttendanceMessage('이미 출근 처리되어 있습니다.');
+        return;
+      }
+      const todayRow = getTodayAttendanceRow(user.id);
+      if (todayRow) {
+        todayRow.checkIn = timeOnly();
+        todayRow.checkOut = '';
+        todayRow.status = '근무중';
+        todayRow.leaveRequestedAt = '';
+        todayRow.leaveApprovedAt = '';
+        todayRow.leaveRejectedAt = '';
+        todayRow.leaveApprovedBy = '';
+        todayRow.adminSaved = false;
+        todayRow.updatedAt = nowText();
+      } else {
+        attendance.unshift({ id: Date.now(), userId: user.id, date: today(), checkIn: timeOnly(), checkOut: '', status: '근무중', adminSaved: false, updatedAt: nowText(), leaveRequestedAt: '', leaveApprovedAt: '', leaveRejectedAt: '', leaveApprovedBy: '' });
+      }
+      save(ATTENDANCE_KEY, attendance);
+      syncBackups();
+      syncAttendanceMessage('출근 시간이 저장되었습니다.');
+      renderAll();
+    }
+
+    function handleCheckOut() {
+      const user = currentUser();
+      if (!user) return;
+      const gate = canCheckOutNow(user);
+      if (!gate.ok) {
+        syncAttendanceMessage(gate.reason);
+        return;
+      }
+      const open = getOpenAttendance(user.id);
+      if (!open) {
+        syncAttendanceMessage('먼저 출근 버튼을 눌러주세요.');
+        return;
+      }
+      open.checkOut = timeOnly();
+      open.status = '퇴근완료';
+      open.adminSaved = false;
+      open.updatedAt = nowText();
+      save(ATTENDANCE_KEY, attendance);
+      syncBackups();
+      syncAttendanceMessage('퇴근 시간이 저장되었습니다.');
+      renderAll();
+    }
+
+    function requestAnnualLeave() {
+      const user = currentUser();
+      if (!user) return;
+      const leaveDate = normalizeLeaveDateSelection(user, false) || document.getElementById('annualLeaveDate')?.value || today();
+      if (leaveDate < today()) {
+        syncAttendanceMessage('연차는 오늘 이후 날짜로 신청해 주세요.');
+        return;
+      }
+      const holiday = getCompanyHoliday(user.category, leaveDate);
+      if (holiday) {
+        syncAttendanceMessage(`선택한 날짜는 회사 휴일${holiday.reason ? `(${holiday.reason})` : ''}이라 연차 신청을 할 수 없습니다.`);
+        return;
+      }
+      const schedule = getScheduleForDate(user, leaveDate);
+      if (!schedule) {
+        syncAttendanceMessage('연차 사용 날짜는 근무예정일만 신청할 수 있습니다.');
+        return;
+      }
+      const targetRow = getAttendanceRowByDate(user.id, leaveDate);
+      if (targetRow?.status === '연차승인' || targetRow?.status === '연차') {
+        syncAttendanceMessage('선택한 날짜의 연차는 이미 승인되어 있습니다. 다른 근무일을 선택해 주세요.');
+        const nextDate = getNextWorkDate(user, leaveDate, false);
+        const input = document.getElementById('annualLeaveDate');
+        if (input && nextDate) input.value = nextDate;
+        renderDashboard();
+        return;
+      }
+      if (targetRow?.status === '연차요청') {
+        syncAttendanceMessage('선택한 날짜는 이미 신청되어 있습니다. 다른 근무일을 바로 선택해 다시 신청하실 수 있습니다.');
+        const nextDate = getNextWorkDate(user, leaveDate, false);
+        const input = document.getElementById('annualLeaveDate');
+        if (input && nextDate) input.value = nextDate;
+        renderDashboard();
+        return;
+      }
+      if (targetRow?.checkIn || targetRow?.checkOut || targetRow?.status === '근무중' || targetRow?.status === '퇴근완료') {
+        syncAttendanceMessage('선택한 날짜에 이미 출퇴근 기록이 있어 연차로 변경할 수 없습니다.');
+        return;
+      }
+      const availableLeave = getAnnualLeaveAvailable(user, String(leaveDate || today()).slice(0, 4));
+      if (availableLeave <= 0) {
+        syncAttendanceMessage(`배정된 연차 ${Number(user.annualLeaveTotal || 0)}일을 모두 사용했거나 신청 대기 중이라 추가 신청을 할 수 없습니다.`);
+        return;
+      }
+      if (targetRow) {
+        targetRow.checkIn = '';
+        targetRow.checkOut = '';
+        targetRow.status = '연차요청';
+        targetRow.leaveRequestedAt = nowText();
+        targetRow.leaveApprovedAt = '';
+        targetRow.leaveRejectedAt = '';
+        targetRow.leaveApprovedBy = '';
+        targetRow.adminSaved = false;
+        targetRow.updatedAt = nowText();
+      } else {
+        attendance.unshift({
+          id: Date.now(),
+          userId: user.id,
+          date: leaveDate,
+          checkIn: '',
+          checkOut: '',
+          status: '연차요청',
+          adminSaved: false,
+          updatedAt: nowText(),
+          leaveRequestedAt: nowText(),
+          leaveApprovedAt: '',
+          leaveRejectedAt: '',
+          leaveApprovedBy: ''
+        });
+      }
+      save(ATTENDANCE_KEY, attendance);
+      syncBackups();
+      const nextDate = getNextWorkDate(user, leaveDate, false);
+      const input = document.getElementById('annualLeaveDate');
+      if (input && nextDate) input.value = nextDate;
+      syncAttendanceMessage(`${leaveDate} 연차 신청이 저장되었습니다. 다음 근무예정일을 바로 선택해 이어서 신청하실 수 있습니다.`);
+      renderAll();
+    }
+
+    function syncAttendanceMessage(text) {
+      document.getElementById('dashboardAttendanceMsg').textContent = text;
+    }
+
+    function currentUser() { return session ? users.find(u => u.id === session.userId) : null; }
+    function getTodayAttendanceRow(userId) {
+      return attendance.find(a => a.userId === userId && a.date === today()) || null;
+    }
+    function getAttendanceRowByDate(userId, dateStr) {
+      return attendance.find(a => a.userId === userId && a.date === dateStr) || null;
+    }
+    function getCompanyHoliday(category, dateStr = today()) {
+      return companyHolidays.find(h => h.category === category && h.date === dateStr) || null;
+    }
+    function getEffectiveScheduleInfo(user, dateStr = today()) {
+      const holiday = getCompanyHoliday(user?.category, dateStr);
+      const schedule = getScheduleForDate(user, dateStr);
+      return { holiday, schedule: holiday ? null : schedule };
+    }
+    function getScheduleDisplayText(user, dateStr = today()) {
+      const holiday = getCompanyHoliday(user?.category, dateStr);
+      const baseSchedule = getScheduleForDate(user, dateStr);
+      if (holiday) return `회사 휴일${holiday.reason ? ` · ${holiday.reason}` : ''}${baseSchedule ? ` · 원래 ${baseSchedule.start} ~ ${baseSchedule.end}` : ''}`;
+      if (baseSchedule) return `${baseSchedule.start} ~ ${baseSchedule.end}`;
+      return '-';
+    }
+    function getOpenAttendance(userId) {
+      return attendance.find(a => a.userId === userId && a.date === today() && !a.checkOut && ['근무중', '수정완료'].includes(a.status)) || null;
+    }
+    function getAssignmentWeekValue(assignment) { return assignment?.createdWeek || weekKeyFromDateStr(assignment?.createdAt || today()); }
+    function workerAssignments(user) {
+      return assignments
+        .filter(a => a.category === user.category)
+        .sort((a, b) => getAssignmentWeekValue(b).localeCompare(getAssignmentWeekValue(a)) || (b.id - a.id));
+    }
+    function workerSubmissions(userId) { return submissions.filter(s => s.userId === userId); }
+    function getShiftedWeekKey(offset = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + (offset * 7));
+      return weekKey(d);
+    }
+    function getSelectedAssignmentWeek() {
+      return getShiftedWeekKey(assignmentTemplateWeekOffset);
+    }
+    function getAssignmentTemplateOptions() {
+      return [
+        { value: '0', week: getShiftedWeekKey(0), label: `이번 주 · ${getSubmissionWeekLabel(getShiftedWeekKey(0))}` },
+        { value: '1', week: getShiftedWeekKey(1), label: `차주 예약 · ${getSubmissionWeekLabel(getShiftedWeekKey(1))}` }
+      ];
+    }
+    function getWorkerAssignmentWeekOptions() {
+      return [
+        { value: getShiftedWeekKey(-1), label: `전주 · ${getSubmissionWeekLabel(getShiftedWeekKey(-1))}` },
+        { value: getShiftedWeekKey(0), label: `이번주 · ${getSubmissionWeekLabel(getShiftedWeekKey(0))}` },
+        { value: getShiftedWeekKey(1), label: `다음주 · ${getSubmissionWeekLabel(getShiftedWeekKey(1))}` }
+      ];
+    }
+    function getWorkerAssignmentWeekScopeLabel(week) {
+      const prev = getShiftedWeekKey(-1);
+      const curr = getShiftedWeekKey(0);
+      const nextw = getShiftedWeekKey(1);
+      if (week === prev) return '전주';
+      if (week === curr) return '이번주';
+      if (week === nextw) return '다음주';
+      return getSubmissionWeekLabel(week);
+    }
+    function getAssignmentByCategoryAndWeek(category, targetWeek) {
+      return assignments.find(a => a.category === category && getAssignmentWeekValue(a) === targetWeek) || null;
+    }
+    function getWorkerLeaveDays(userId, week = weekKey()) {
+      return new Set(
+        attendance
+          .filter(a => a.userId === userId && ['연차승인', '연차'].includes(a.status) && weekKeyFromDateStr(a.date) === week)
+          .map(a => a.date)
+      ).size;
+    }
+    function getWorkerPendingLeaveDays(userId, week = weekKey()) {
+      return new Set(
+        attendance
+          .filter(a => a.userId === userId && a.status === '연차요청' && weekKeyFromDateStr(a.date) === week)
+          .map(a => a.date)
+      ).size;
+    }
+    function getEffectiveWeeklyWorkDays(user, week = weekKey()) {
+      const baseDays = Math.max(1, Math.min(4, user?.workDays?.length || 1));
+      const leaveDays = Math.min(baseDays, getWorkerLeaveDays(user?.id, week));
+      return Math.max(0, baseDays - leaveDays);
+    }
+    function getWorkerBaseWeeklyTarget(user) {
+      const fallback = Math.max(0, Math.min(4, user?.workDays?.length || 0) * 3);
+      const configured = Number(user?.weeklySubmissionTarget);
+      return Number.isFinite(configured) && configured >= 0 ? configured : fallback;
+    }
+    function getWorkerWeeklyTarget(user, week = weekKey()) {
+      const baseDays = Math.max(1, Math.min(4, user?.workDays?.length || 1));
+      const effectiveDays = getEffectiveWeeklyWorkDays(user, week);
+      const baseTarget = getWorkerBaseWeeklyTarget(user);
+      if (baseTarget <= 0 || effectiveDays <= 0) return 0;
+      return Math.max(0, Math.round(baseTarget * (effectiveDays / baseDays)));
+    }
+    function countSubmissionImagesForWeek(userId, targetWeek) {
+      return submissions
+        .filter(s => s.userId === userId && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === targetWeek)
+        .reduce((sum, s) => sum + (s.images?.length || 0), 0);
+    }
+    function getWorkerSubmissionForWeek(userId, category, targetWeek) {
+      const assignment = getAssignmentByCategoryAndWeek(category, targetWeek);
+      if (!assignment) return null;
+      return submissions.find(s => s.userId === userId && s.assignmentId === assignment.id && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === targetWeek) || null;
+    }
+    function getAdminAttendanceMonthOptions(category = adminDepartmentFilter) {
+      const values = new Set([today().slice(0, 7)]);
+      attendance.forEach(a => {
+        const worker = users.find(u => u.id === a.userId);
+        if (worker?.category !== category) return;
+        const month = String(a.date || '').slice(0, 7);
+        if (month) values.add(month);
+      });
+      companyHolidays.forEach(h => {
+        if (h?.category !== category) return;
+        const month = String(h.date || '').slice(0, 7);
+        if (month) values.add(month);
+      });
+      return Array.from(values).sort().reverse();
+    }
+    function getAdminAttendanceMonth() {
+      const months = getAdminAttendanceMonthOptions(adminDepartmentFilter);
+      if (!adminAttendanceMonthFilter || !months.includes(adminAttendanceMonthFilter)) {
+        adminAttendanceMonthFilter = months[0] || today().slice(0, 7);
+      }
+      return adminAttendanceMonthFilter;
+    }
+    function isAnnualLeaveToday(userId) {
+      return attendance.some(a => a.userId === userId && a.date === today() && ['연차승인', '연차'].includes(a.status));
+    }
+    function getCurrentWeekReferenceImages(assignmentList = []) {
+      return assignmentList.flatMap(a => (a.referenceImages || []).map((img, index) => ({ ...img, name: img.name || `${a.title}-${index + 1}` })));
+    }
+    function getSubmissionRowsForManager() {
+      return submissions.filter(s => {
+        const weekMatch = (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === submissionManageFilterWeek;
+        if (!weekMatch) return false;
+        if (submissionManageDepartmentFilter === 'ALL') return true;
+        const worker = users.find(u => u.id === s.userId);
+        return worker?.category === submissionManageDepartmentFilter;
+      });
+    }
+    function currentDayIndex() { return new Date().getDay(); }
+    function currentMinutes() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+    function timeToMinutes(value = '') {
+      const [h, m] = String(value || '').split(':').map(Number);
+      if (Number.isNaN(h) || Number.isNaN(m)) return null;
+      return h * 60 + m;
+    }
+    function dayIndexFromDateStr(dateStr = today()) {
+      const [y, m, d] = String(dateStr).split('-').map(Number);
+      if (!y || !m || !d) return new Date().getDay();
+      return new Date(y, m - 1, d).getDay();
+    }
+    function getScheduleForDate(user, dateStr = today()) {
+      const day = dayIndexFromDateStr(dateStr);
+      if (user?.dailySchedules && user.dailySchedules[String(day)]) return { day, ...user.dailySchedules[String(day)] };
+      if (user?.dailySchedules && user.dailySchedules[day]) return { day, ...user.dailySchedules[day] };
+      if (user?.workDays?.includes(day)) return { day, start: user.workStart, end: user.workEnd };
+      return null;
+    }
+    function getUserScheduleText(user) {
+      const order = [1,2,3,4,5,6,0];
+      const schedules = order.map(day => user?.dailySchedules?.[String(day)] || user?.dailySchedules?.[day]).filter(Boolean);
+      if (schedules.length) return schedules.map(item => `${dayLabel[item.day]} ${item.start} ~ ${item.end}`).join(' · ');
+      if (!user?.workDays?.length || !user?.workStart || !user?.workEnd) return '근무시간이 설정되지 않았습니다.';
+      return `${user.workDays.map(day => dayLabel[day]).join(' · ')} / ${user.workStart} ~ ${user.workEnd}`;
+    }
+    function getAnnualLeaveUsed(userId, year = String(today()).slice(0, 4)) {
+      return attendance.filter(a => a.userId === userId && String(a.date || '').startsWith(year) && ['연차승인', '연차'].includes(a.status)).length;
+    }
+    function getAnnualLeavePending(userId, year = String(today()).slice(0, 4)) {
+      return attendance.filter(a => a.userId === userId && String(a.date || '').startsWith(year) && a.status === '연차요청').length;
+    }
+    function getAnnualLeaveRemaining(user, year = String(today()).slice(0, 4)) {
+      return Math.max(0, Number(user?.annualLeaveTotal || 0) - getAnnualLeaveUsed(user?.id, year));
+    }
+    function getAnnualLeaveAvailable(user, year = String(today()).slice(0, 4)) {
+      const total = Number(user?.annualLeaveTotal || 0);
+      return Math.max(0, total - getAnnualLeaveUsed(user?.id, year) - getAnnualLeavePending(user?.id, year));
+    }
+    function getDepartmentWorkerCount(category) {
+      return users.filter(u => u.role === 'worker' && u.category === category).length;
+    }
+    function canCheckInNow(user) {
+      const holiday = getCompanyHoliday(user?.category, today());
+      if (holiday) return { ok: false, reason: `오늘은 회사 휴일${holiday.reason ? `(${holiday.reason})` : ''}입니다.` };
+      if (isAnnualLeaveToday(user?.id)) return { ok: false, reason: '오늘은 승인된 연차일입니다.' };
+      const schedule = getScheduleForDate(user, today());
+      if (!schedule) return { ok: false, reason: '오늘은 등록된 근무일이 아닙니다.' };
+      const start = timeToMinutes(schedule.start);
+      if (start !== null && currentMinutes() < start) return { ok: false, reason: `출근은 ${schedule.start}부터 가능합니다.` };
+      return { ok: true, reason: '출근 가능' };
+    }
+    function canCheckOutNow(user) {
+      const holiday = getCompanyHoliday(user?.category, today());
+      if (holiday) return { ok: false, reason: `오늘은 회사 휴일${holiday.reason ? `(${holiday.reason})` : ''}입니다.` };
+      if (isAnnualLeaveToday(user?.id)) return { ok: false, reason: '오늘은 승인된 연차일입니다.' };
+      const schedule = getScheduleForDate(user, today());
+      if (!schedule) return { ok: false, reason: '오늘은 등록된 근무일이 아닙니다.' };
+      const end = timeToMinutes(schedule.end);
+      if (end !== null && currentMinutes() < end) return { ok: false, reason: `퇴근은 ${schedule.end}부터 가능합니다.` };
+      return { ok: true, reason: '퇴근 가능' };
+    }
+    function syncBackups() {
+      backupAll = {
+        generatedAt: nowText(),
+        users,
+        assignments,
+        submissions,
+        attendance,
+        companyHolidays
+      };
+
+      attendanceBackups = attendance.reduce((acc, row) => {
+        const month = monthKeyFromDateStr(row.date);
+        if (!acc[month]) acc[month] = { month, updatedAt: nowText(), records: [], holidays: [], summaryByUser: [] };
+        acc[month].updatedAt = nowText();
+        acc[month].records.push(row);
+        return acc;
+      }, {});
+
+      Object.values(attendanceBackups).forEach(bucket => {
+        bucket.holidays = companyHolidays.filter(h => monthKeyFromDateStr(h.date) === bucket.month);
+        const grouped = users.filter(u => u.role === 'worker').map(worker => {
+          const rows = bucket.records.filter(r => r.userId === worker.id);
+          return {
+            userId: worker.id,
+            name: worker.name,
+            category: worker.category,
+            totalRows: rows.length,
+            workedDays: rows.filter(r => ['근무중', '퇴근완료', '수정완료'].includes(r.status)).length,
+            approvedLeaveDays: rows.filter(r => ['연차승인', '연차'].includes(r.status)).length,
+            pendingLeaveDays: rows.filter(r => r.status === '연차요청').length,
+            checkedOutDays: rows.filter(r => !!r.checkOut).length,
+            annualLeaveTotal: Number(worker.annualLeaveTotal || 0),
+            annualLeaveRemaining: getAnnualLeaveRemaining(worker, bucket.month.slice(0, 4)),
+            schedule: getUserScheduleText(worker)
+          };
+        }).filter(item => item.totalRows > 0 || item.approvedLeaveDays > 0 || item.pendingLeaveDays > 0);
+        bucket.summaryByUser = grouped;
+      });
+
+      assignmentBackups = assignments.reduce((acc, row) => {
+        const week = row.createdWeek || weekKeyFromDateStr(row.createdAt);
+        if (!acc[week]) acc[week] = { week, updatedAt: nowText(), assignments: [] };
+        acc[week].updatedAt = nowText();
+        acc[week].assignments.push({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          category: row.category,
+          dueDate: row.dueDate,
+          createdAt: row.createdAt,
+          referenceImages: row.referenceImages || []
+        });
+        return acc;
+      }, {});
+
+      submissionBackups = submissions.reduce((acc, row) => {
+        const week = row.submittedWeek || weekKeyFromDateStr(row.submittedAt);
+        if (!acc[week]) acc[week] = { week, updatedAt: nowText(), submissions: [] };
+        acc[week].updatedAt = nowText();
+        acc[week].submissions.push(row);
+        return acc;
+      }, {});
+
+      save(BACKUP_ALL_KEY, backupAll);
+      save(BACKUP_ATTENDANCE_MONTHLY_KEY, attendanceBackups);
+      save(BACKUP_ASSIGNMENT_WEEKLY_KEY, assignmentBackups);
+      save(BACKUP_SUBMISSION_WEEKLY_KEY, submissionBackups);
+    }
+    function downloadJson(filename, data) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    function countImagesToday(userId, excludeSubmissionId = null) {
+      return submissions
+        .filter(s => s.userId === userId && s.submittedDate === today() && s.id !== excludeSubmissionId)
+        .reduce((sum, s) => sum + (s.images?.length || 0), 0);
+    }
+    function countImagesWeek(userId, weekOrExclude = null, maybeExclude = null) {
+      const targetWeek = typeof weekOrExclude === 'string' && weekOrExclude.includes('-W') ? weekOrExclude : weekKey();
+      const excludeSubmissionId = typeof weekOrExclude === 'string' && weekOrExclude.includes('-W') ? maybeExclude : weekOrExclude;
+      return submissions
+        .filter(s => s.userId === userId && s.submittedWeek === targetWeek && s.id !== excludeSubmissionId)
+        .reduce((sum, s) => sum + (s.images?.length || 0), 0);
+    }
+
+    function showPage(pageId) {
+      const user = currentUser();
+      if (!user) return;
+      if (user.role === 'admin' && ['dashboardPage','workerAssignmentsPage','accountPage'].includes(pageId)) pageId = 'assignmentsPage';
+      if (user.role !== 'admin' && ['assignmentsPage','submissionManagePage','adminPage','adminToolsPage'].includes(pageId)) pageId = 'dashboardPage';
+      document.querySelectorAll('.page').forEach(page => page.classList.toggle('active', page.id === pageId));
+      document.querySelectorAll('.menu-btn[data-page]').forEach(btn => btn.classList.toggle('active', btn.dataset.page === pageId));
+    }
+
+    function enterApp() {
+      authView.classList.add('hidden');
+      appView.classList.remove('hidden');
+      const leaveDateInput = document.getElementById('annualLeaveDate');
+      if (leaveDateInput && !leaveDateInput.value) leaveDateInput.value = today();
+      const user = currentUser();
+      if (user && user.role === 'worker') normalizeLeaveDateSelection(user, false);
+      renderAll();
+      showPage(currentUser()?.role === 'admin' ? 'assignmentsPage' : 'dashboardPage');
+    }
+
+    function renderAll() {
+      users = load(USERS_KEY, seedUsers);
+      assignments = load(ASSIGNMENTS_KEY, seedAssignments);
+      submissions = load(SUBMISSIONS_KEY, []);
+      attendance = load(ATTENDANCE_KEY, []);
+      backupAll = load(BACKUP_ALL_KEY, {});
+      attendanceBackups = load(BACKUP_ATTENDANCE_MONTHLY_KEY, {});
+      assignmentBackups = load(BACKUP_ASSIGNMENT_WEEKLY_KEY, {});
+      submissionBackups = load(BACKUP_SUBMISSION_WEEKLY_KEY, {});
+      renderSidebar();
+      renderDashboard();
+      renderWorkerAssignmentsPage();
+      renderWorkerAccountPage();
+      renderAssignments();
+      renderAttendance();
+      renderAdmin();
+      renderSubmissionManager();
+    }
+
+    function renderSidebar() {
+      const user = currentUser();
+      if (!user) return;
+      const dashboardMenu = document.getElementById('dashboardMenu');
+      const workerAssignmentsMenu = document.getElementById('workerAssignmentsMenu');
+      const accountMenu = document.getElementById('accountMenu');
+      const assignmentsMenu = document.getElementById('assignmentsMenu');
+      const submissionMenu = document.getElementById('submissionMenu');
+      const adminToolsMenu = document.getElementById('adminToolsMenu');
+      document.getElementById('sessionName').textContent = user.name;
+      document.getElementById('sessionMeta').textContent = user.role === 'admin'
+        ? '관리자 · 과제/제출/출퇴근/계정도구'
+        : `직원 · ${categoryLabel[user.category]}`;
+      document.getElementById('brandSub').textContent = user.role === 'admin' ? '관리자 운영 모드' : '근무 시트 반영 모드';
+      if (dashboardMenu) dashboardMenu.classList.toggle('hidden', user.role === 'admin');
+      if (workerAssignmentsMenu) workerAssignmentsMenu.classList.toggle('hidden', user.role === 'admin');
+      if (accountMenu) accountMenu.classList.toggle('hidden', user.role === 'admin');
+      if (assignmentsMenu) assignmentsMenu.classList.toggle('hidden', user.role !== 'admin');
+      if (submissionMenu) submissionMenu.classList.toggle('hidden', user.role !== 'admin');
+      adminMenu.classList.toggle('hidden', user.role !== 'admin');
+      if (adminToolsMenu) adminToolsMenu.classList.toggle('hidden', user.role !== 'admin');
+    }
+
+    function renderDashboardSubmissionControls(user, weeklyAssignments = []) {
+      const uploadArea = document.getElementById('attendanceUploadArea');
+      const select = document.getElementById('dashboardAssignmentSelect');
+      const fileInput = document.getElementById('dashboardSubmitFiles');
+      const submitBtn = document.getElementById('dashboardSubmitBtn');
+      const guide = document.getElementById('dashboardSubmitGuide');
+      if (!uploadArea || !select || !fileInput || !submitBtn || !guide) return;
+
+      if (!weeklyAssignments.length) {
+        uploadArea.classList.remove('hidden');
+        select.innerHTML = '<option value="">이번 주 과제 없음</option>';
+        select.disabled = true;
+        fileInput.disabled = true;
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.45';
+        guide.textContent = '이번 주 등록된 과제가 없어 이미지 제출이 비활성화됩니다.';
+        return;
+      }
+
+      uploadArea.classList.remove('hidden');
+      const currentValue = select.value;
+      select.innerHTML = weeklyAssignments.map(a => `<option value="${a.id}">${escapeHtml(a.title)}</option>`).join('');
+      if (weeklyAssignments.some(a => String(a.id) === String(currentValue))) {
+        select.value = currentValue;
+      }
+      select.disabled = false;
+      const selected = weeklyAssignments.find(a => String(a.id) === String(select.value)) || weeklyAssignments[0];
+      if (selected) select.value = String(selected.id);
+      const selectedWeek = selected ? getAssignmentWeekValue(selected) : getActiveAssignmentWeekForUser(user);
+      const existing = selected ? submissions.find(s => s.assignmentId === selected.id && s.userId === user.id) : null;
+      const weeklyTarget = getWorkerWeeklyTarget(user, selectedWeek);
+      const otherSubmitted = countImagesWeek(user.id, selectedWeek, existing?.id || null);
+      fileInput.disabled = false;
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.textContent = existing ? '이미지 다시 제출' : '이미지 제출';
+      guide.textContent = selected
+        ? `${selected.title} · ${getSubmissionWeekLabel(selectedWeek)} 개인 기준 ${weeklyTarget}장 / 다른 제출 ${otherSubmitted}장 / 파일 선택 후 바로 제출`
+        : '현재 노출 과제를 선택한 뒤 이미지를 제출해 주세요.';
+      select.onchange = () => renderDashboardSubmissionControls(user, weeklyAssignments);
+    }
+
+    async function submitDashboardImages() {
+      const user = currentUser();
+      if (!user || user.role !== 'worker') return;
+      const select = document.getElementById('dashboardAssignmentSelect');
+      const fileInput = document.getElementById('dashboardSubmitFiles');
+      if (!select || !fileInput) return;
+      const assignmentId = Number(select.value || 0);
+      const assignment = assignments.find(a => a.id === assignmentId);
+      if (!assignment || assignment.category !== user.category) {
+        alert('제출할 이번 주 과제를 먼저 선택해 주세요.');
+        return;
+      }
+      const files = Array.from(fileInput.files || []);
+      if (!files.length) {
+        alert('이미지 파일을 선택해 주세요.');
+        return;
+      }
+      if (files.length > 12) {
+        alert('한 번에 최대 12장까지만 제출할 수 있어요.');
+        return;
+      }
+
+      const existing = submissions.find(s => s.assignmentId === assignmentId && s.userId === user.id);
+      const images = await Promise.all(files.map(readFileAsDataUrl));
+      const payload = images.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
+
+      if (existing) {
+        existing.images = payload;
+        existing.submittedAt = nowText();
+        existing.submittedDate = today();
+        existing.submittedWeek = getAssignmentWeekValue(assignment);
+        existing.status = '제출완료';
+      } else {
+        submissions.unshift({
+          id: Date.now(),
+          assignmentId,
+          userId: user.id,
+          images: payload,
+          submittedAt: nowText(),
+          submittedDate: today(),
+          submittedWeek: getAssignmentWeekValue(assignment),
+          status: '제출완료'
+        });
+      }
+      save(SUBMISSIONS_KEY, submissions);
+      syncBackups();
+      fileInput.value = '';
+      syncAttendanceMessage(`${assignment.title} 이미지 ${payload.length}장이 제출되었습니다.`);
+      renderAll();
+    }
+
+    function addDays(dateStr, days) {
+      const [y, m, d] = String(dateStr || today()).split('-').map(Number);
+      const base = new Date(y || new Date().getFullYear(), (m || 1) - 1, d || 1);
+      base.setDate(base.getDate() + days);
+      return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2,'0')}-${String(base.getDate()).padStart(2,'0')}`;
+    }
+    function getNextWorkDate(user, fromDate = today(), includeSameDate = true) {
+      let cursor = includeSameDate ? fromDate : addDays(fromDate, 1);
+      for (let i = 0; i < 366; i += 1) {
+        const info = getEffectiveScheduleInfo(user, cursor);
+        if (info.schedule) return cursor;
+        cursor = addDays(cursor, 1);
+      }
+      return fromDate;
+    }
+    function normalizeLeaveDateSelection(user, withMessage = false) {
+      const input = document.getElementById('annualLeaveDate');
+      if (!input || !user || user.role !== 'worker') return null;
+      input.min = today();
+      let target = input.value || today();
+      if (target < today()) target = today();
+      input.value = target;
+      if (withMessage) {
+        const holiday = getCompanyHoliday(user.category, target);
+        if (holiday) syncAttendanceMessage(`선택한 날짜는 회사 휴일${holiday.reason ? `(${holiday.reason})` : ''}입니다.`);
+        else if (!getScheduleForDate(user, target)) syncAttendanceMessage('선택한 날짜는 근무예정일이 아닙니다. 연차는 근무예정일만 신청할 수 있습니다.');
+      }
+      return target;
+    }
+    function getWorkerLeaveHistory(userId) {
+      return attendance
+        .filter(a => a.userId === userId && ['연차요청', '연차승인', '연차반려', '연차'].includes(a.status))
+        .sort((a, b) => `${b.date} ${b.leaveRequestedAt || b.updatedAt || ''}`.localeCompare(`${a.date} ${a.leaveRequestedAt || a.updatedAt || ''}`));
+    }
+    function getWorkerLeaveHistoryHtml(user) {
+      const rows = getWorkerLeaveHistory(user.id);
+      if (!rows.length) return '<div class="empty">아직 연차 신청 이력이 없습니다.</div>';
+      return `
+        <table>
+          <thead>
+            <tr><th>연차 사용 날짜</th><th>신청 시간</th><th>상태</th><th>처리 결과</th></tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td>${row.date}</td>
+                <td>${row.leaveRequestedAt || row.updatedAt || '-'}</td>
+                <td><span class="badge ${row.status === '연차승인' || row.status === '연차' ? 'ok' : (row.status === '연차반려' ? 'danger' : 'warn')}">${row.status}</span></td>
+                <td>${row.status === '연차승인' || row.status === '연차' ? (row.leaveApprovedAt || '승인 완료') : (row.status === '연차반려' ? (row.leaveRejectedAt || '반려 처리') : '승인 대기')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function getWorkerLeaveHistorySummaryHtml(user, limit = 4) {
+      const rows = getWorkerLeaveHistory(user.id).slice(0, limit);
+      if (!rows.length) return '<div class="line muted">최근 연차 신청 이력이 없습니다.</div>';
+      return rows.map(row => `<div class="line muted">${row.date} · ${row.status}${row.status === '연차반려' ? ` (${row.leaveRejectedAt || '반려'})` : (row.status === '연차승인' || row.status === '연차' ? ` (${row.leaveApprovedAt || '승인'})` : ' (승인 대기)')}</div>`).join('');
+    }
+    function daysInMonth(monthValue = today().slice(0, 7)) {
+      const [year, month] = String(monthValue).split('-').map(Number);
+      if (!year || !month) return 31;
+      return new Date(year, month, 0).getDate();
+    }
+    function buildDateStr(year, month, day) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+    function getWorkerAttendanceMonthOptions(user) {
+      const months = new Set([today().slice(0, 7)]);
+      attendance.filter(a => a.userId === user.id).forEach(a => months.add(monthKeyFromDateStr(a.date)));
+      companyHolidays.filter(h => h.category === user.category).forEach(h => months.add(monthKeyFromDateStr(h.date)));
+      return Array.from(months).sort().reverse();
+    }
+    function getWorkerMonthlyScheduleRows(user, monthValue = today().slice(0, 7)) {
+      const [year, month] = String(monthValue).split('-').map(Number);
+      if (!year || !month) return [];
+      const rows = [];
+      for (let day = 1; day <= daysInMonth(monthValue); day += 1) {
+        const date = buildDateStr(year, month, day);
+        const schedule = getScheduleForDate(user, date);
+        const row = getAttendanceRowByDate(user.id, date);
+        const holiday = getCompanyHoliday(user.category, date);
+        if (!schedule && !row && !holiday) continue;
+        rows.push({ date, schedule, row, holiday, dayIndex: dayIndexFromDateStr(date) });
+      }
+      return rows;
+    }
+
+    function renderAttendanceStatusHtml(user) {
+      if (user.role === 'admin') {
+        const thisMonth = monthKeyFromDateStr(today());
+        const monthRows = attendance.filter(a => monthKeyFromDateStr(a.date) === thisMonth);
+        const openWorkers = attendance.filter(a => a.date === today() && ['근무중', '수정완료'].includes(a.status) && !a.checkOut).length;
+        const pendingLeaves = attendance.filter(a => a.status === '연차요청').length;
+        return `
+          <div class="status-box">
+            <div class="label">오늘 근무 중 인원</div>
+            <div class="value">${openWorkers}</div>
+          </div>
+          <div class="status-box">
+            <div class="label">연차 신청 대기</div>
+            <div class="value">${pendingLeaves}</div>
+          </div>
+          <div class="status-box">
+            <div class="label">이번 달 출퇴근 기록</div>
+            <div class="value">${monthRows.length}</div>
+          </div>
+          <div class="status-box">
+            <div class="label">월별 백업 수</div>
+            <div class="value">${Object.keys(attendanceBackups || {}).length}</div>
+          </div>
+        `;
+      }
+      const todayRow = getTodayAttendanceRow(user.id);
+      const open = getOpenAttendance(user.id);
+      const activeWeek = getActiveAssignmentWeekForUser(user);
+      const weekCount = countImagesWeek(user.id, activeWeek);
+      const weeklyTarget = getWorkerWeeklyTarget(user, activeWeek);
+      const weeklyAssignments = workerAssignments(user).filter(a => getAssignmentWeekValue(a) === activeWeek);
+      const activeWeekLabel = getSubmissionWeekLabel(activeWeek);
+      const thisMonth = monthKeyFromDateStr(today());
+      const monthApprovedLeaveDays = new Set(attendance.filter(a => a.userId === user.id && ['연차승인', '연차'].includes(a.status) && monthKeyFromDateStr(a.date) === thisMonth).map(a => a.date)).size;
+      const monthPendingLeaveDays = new Set(attendance.filter(a => a.userId === user.id && a.status === '연차요청' && monthKeyFromDateStr(a.date) === thisMonth).map(a => a.date)).size;
+      const todayHoliday = getCompanyHoliday(user.category, today());
+      const todayStatus = todayHoliday ? `회사 휴일${todayHoliday.reason ? ` · ${todayHoliday.reason}` : ''}` : (todayRow?.status || '대기');
+      const leaveTotal = Number(user?.annualLeaveTotal || 0);
+      const leaveUsed = getAnnualLeaveUsed(user.id);
+      const leaveRemaining = getAnnualLeaveRemaining(user);
+      return `
+        <div class="status-box">
+          <div class="label">오늘 상태</div>
+          <div class="value">${open ? '근무 중' : todayStatus}</div>
+          <div class="line muted">승인된 연차와 회사 휴일은 출퇴근 집계와 주간 제출 기준에 자동 반영됩니다.</div>
+        </div>
+        <div class="status-box">
+          <div class="label">오늘 출근 · 퇴근</div>
+          <div class="value">${todayHoliday ? '-' : (todayRow?.checkIn || '-')} / ${todayHoliday ? '-' : (todayRow?.checkOut || '-')}</div>
+          <div class="line muted">오늘이 회사 휴일 또는 연차승인인 경우 출퇴근은 비활성화됩니다.</div>
+        </div>
+        <div class="status-box">
+          <div class="label">현재 노출 과제 요약</div>
+          <div class="value">${activeWeekLabel} · 과제 ${weeklyAssignments.length}개 · 제출 ${weekCount}/${weeklyTarget || 0}장</div>
+          <div class="line">소속 ${escapeHtml(categoryLabel[user.category])}</div>
+          <div class="line muted">근무시간 ${escapeHtml(getUserScheduleText(user))}</div>
+        </div>
+        <div class="status-box">
+          <div class="label">연차 현황</div>
+          <div class="value">총 ${leaveTotal}일 · 사용 ${leaveUsed}일 · 잔여 ${leaveRemaining}일</div>
+          <div class="line muted">이번 달 승인 ${monthApprovedLeaveDays}일 · 신청 대기 ${monthPendingLeaveDays}일</div>
+          <div class="line" style="margin-top:10px;"><strong>연차 신청 현황</strong></div>
+          ${getWorkerLeaveHistorySummaryHtml(user)}
+        </div>
+      `;
+    }
+    function renderPasswordChangeCard(user, scope = 'worker') {
+      const title = user.role === 'admin' ? '관리자 계정 관리' : '내 계정 관리';
+      const desc = user.role === 'admin'
+        ? '관리자 비밀번호를 변경하면 다음 로그인부터 새 비밀번호가 적용됩니다.'
+        : '직원이 비밀번호를 변경하면 관리자 운영관리의 직원 비밀번호 값도 동일하게 반영됩니다.';
+      return `
+        <div class="card">
+          <h3 style="margin-top:0;">${title}</h3>
+          <div class="small" style="margin-bottom:12px;">${desc}</div>
+          <div class="grid-3">
+            <div class="field"><label>현재 비밀번호</label><input class="input" type="password" id="my-password-current-${scope}" placeholder="현재 비밀번호"></div>
+            <div class="field"><label>새 비밀번호</label><input class="input" type="password" id="my-password-next-${scope}" placeholder="새 비밀번호"></div>
+            <div class="field"><label>새 비밀번호 확인</label><input class="input" type="password" id="my-password-confirm-${scope}" placeholder="새 비밀번호 확인"></div>
+          </div>
+          <div class="btn-row" style="margin-top:10px;">
+            <button class="btn accent" type="button" onclick="changeMyPassword('${scope}')">비밀번호 변경 저장</button>
+          </div>
+          <div class="msg" id="myPasswordMsg-${scope}">현재 로그인 계정: ${escapeHtml(user.name)}</div>
+        </div>
+      `;
+    }
+
+    function changeMyPassword(scope = 'worker') {
+      const user = currentUser();
+      if (!user) return;
+      const currentInput = document.getElementById(`my-password-current-${scope}`);
+      const nextInput = document.getElementById(`my-password-next-${scope}`);
+      const confirmInput = document.getElementById(`my-password-confirm-${scope}`);
+      const msgId = `myPasswordMsg-${scope}`;
+      const writeMsg = (value) => {
+        const el = document.getElementById(msgId);
+        if (el) el.textContent = value;
+      };
+      const currentValue = currentInput?.value.trim() || '';
+      const nextValue = nextInput?.value.trim() || '';
+      const confirmValue = confirmInput?.value.trim() || '';
+      if (!currentValue || !nextValue || !confirmValue) {
+        writeMsg('현재 비밀번호와 새 비밀번호를 모두 입력해 주세요.');
+        return;
+      }
+      if (currentValue !== user.password) {
+        writeMsg('현재 비밀번호가 일치하지 않습니다.');
+        return;
+      }
+      if (nextValue.length < 4) {
+        writeMsg('새 비밀번호는 4자리 이상으로 입력해 주세요.');
+        return;
+      }
+      if (nextValue !== confirmValue) {
+        writeMsg('새 비밀번호 확인 값이 일치하지 않습니다.');
+        return;
+      }
+      const target = users.find(u => u.id === user.id);
+      if (!target) {
+        writeMsg('계정 정보를 찾을 수 없습니다.');
+        return;
+      }
+      target.password = nextValue;
+      save(USERS_KEY, users);
+      syncBackups();
+      renderAll();
+      const currentEl = document.getElementById(`my-password-current-${scope}`);
+      const nextEl = document.getElementById(`my-password-next-${scope}`);
+      const confirmEl = document.getElementById(`my-password-confirm-${scope}`);
+      if (currentEl) currentEl.value = '';
+      if (nextEl) nextEl.value = '';
+      if (confirmEl) confirmEl.value = '';
+      writeMsg('비밀번호가 변경되었습니다. 다음 로그인부터 새 비밀번호가 적용됩니다.');
+    }
+
+    function renderWorkerAssignmentsPage() {
+      const user = currentUser();
+      const select = document.getElementById('workerAssignmentWeekSelect');
+      const summary = document.getElementById('workerAssignmentWeekSummary');
+      const content = document.getElementById('workerAssignmentWeekContent');
+      const msg = document.getElementById('workerAssignmentWeekMsg');
+      if (!select || !summary || !content || !msg) return;
+      if (!user || user.role !== 'worker') {
+        select.innerHTML = '';
+        summary.textContent = '';
+        content.innerHTML = '';
+        return;
+      }
+      const options = getWorkerAssignmentWeekOptions();
+      if (!options.some(opt => opt.value === workerAssignmentViewWeek)) workerAssignmentViewWeek = options[1].value;
+      select.innerHTML = options.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
+      select.value = workerAssignmentViewWeek;
+      const assignmentsForWeek = workerAssignments(user).filter(a => getAssignmentWeekValue(a) === workerAssignmentViewWeek);
+      const weekLabel = getSubmissionWeekLabel(workerAssignmentViewWeek);
+      const scopeLabel = getWorkerAssignmentWeekScopeLabel(workerAssignmentViewWeek);
+      const imageCount = assignmentsForWeek.reduce((sum, item) => sum + (item.referenceImages?.length || 0), 0);
+      const mySubmissionCount = submissions.filter(s => s.userId === user.id && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === workerAssignmentViewWeek).length;
+      summary.textContent = `${scopeLabel} · ${weekLabel} · 과제 ${assignmentsForWeek.length}개 · 예시 이미지 ${imageCount}장 · 내 제출 ${mySubmissionCount}건`;
+      msg.textContent = `${scopeLabel} 과제를 보고 필요하면 바로 이미지 제출까지 진행할 수 있습니다.`;
+      content.innerHTML = assignmentsForWeek.length
+        ? `<div class="grid-2">${getWorkerAssignmentCardsHtml(user, assignmentsForWeek, 'large', '', true, true)}</div>`
+        : `<div class="card"><div class="empty">${scopeLabel}에 등록된 과제가 아직 없습니다.</div></div>`;
+    }
+
+    function renderWorkerAccountPage() {
+      const user = currentUser();
+      const content = document.getElementById('workerAccountContent');
+      if (!content) return;
+      if (!user || user.role !== 'worker') {
+        content.innerHTML = '';
+        return;
+      }
+      content.innerHTML = renderPasswordChangeCard(user, 'worker');
+    }
+
+    function renderDashboard() {
+      const user = currentUser();
+      if (!user) return;
+      const title = document.getElementById('dashboardTitle');
+      const desc = document.getElementById('dashboardDesc');
+      const hero = document.getElementById('dashboardHero');
+      const content = document.getElementById('dashboardContent');
+      const actionRow = document.getElementById('attendanceActionRow');
+      const uploadArea = document.getElementById('attendanceUploadArea');
+      const leaveDateInput = document.getElementById('annualLeaveDate');
+      if (leaveDateInput && !leaveDateInput.value) leaveDateInput.value = today();
+      if (user.role === 'worker') normalizeLeaveDateSelection(user, false);
+      document.getElementById('dashboardAttendanceStatus').innerHTML = renderAttendanceStatusHtml(user);
+
+      if (user.role === 'admin') {
+        actionRow.classList.add('hidden');
+        if (uploadArea) uploadArea.classList.add('hidden');
+        syncAttendanceMessage('관리자는 출퇴근 버튼이 없으며 직원 기록 수정, 연차 승인, 백업 관리를 진행합니다.');
+        const counts = { A: 0, B: 0, C: 0, D: 0 };
+        assignments.forEach(a => counts[a.category]++);
+        title.textContent = '운영 대시보드';
+        desc.textContent = '운영관리에서는 회사별 계정, 근무시간, 과제, 연차, 백업을 한 번에 관리하실 수 있습니다.';
+        hero.innerHTML = `<strong>운영관리에서 직원 기록 수정, 연차 승인, 백업 다운로드까지 함께 처리하실 수 있습니다.</strong><div class="small" style="margin-top:8px; color:var(--muted);">과제 등록은 회사별 4개 틀로 유지되며, 제출 과제 관리는 주차와 회사 기준으로 분리되어 있습니다.</div>`;
+        content.innerHTML = `
+          <div class="grid-4">
+            <div class="card stat"><div class="label">${escapeHtml(categoryLabel.A)} 과제</div><div class="value">${counts.A}</div><div class="sub">회사별 등록 카드 수</div></div>
+            <div class="card stat"><div class="label">${escapeHtml(categoryLabel.B)} 과제</div><div class="value">${counts.B}</div><div class="sub">회사별 등록 카드 수</div></div>
+            <div class="card stat"><div class="label">${escapeHtml(categoryLabel.C)} 과제</div><div class="value">${counts.C}</div><div class="sub">회사별 등록 카드 수</div></div>
+            <div class="card stat"><div class="label">${escapeHtml(categoryLabel.D)} 과제</div><div class="value">${counts.D}</div><div class="sub">회사별 등록 카드 수</div></div>
+          </div>
+        `;
+      } else {
+        actionRow.classList.remove('hidden');
+        if (uploadArea) uploadArea.classList.remove('hidden');
+        const mine = workerAssignments(user);
+        const activeWeek = getActiveAssignmentWeekForUser(user);
+        const weeklyAssignments = mine.filter(a => getAssignmentWeekValue(a) === activeWeek);
+        const otherAssignments = mine.filter(a => getAssignmentWeekValue(a) !== activeWeek);
+        const activeWeekLabel = getSubmissionWeekLabel(activeWeek);
+        const checkInGate = canCheckInNow(user);
+        const checkOutGate = canCheckOutNow(user);
+        const heroImages = getCurrentWeekReferenceImages(weeklyAssignments);
+        const leaveBtn = document.getElementById('dashboardAnnualLeaveBtn');
+        const selectedLeaveDate = normalizeLeaveDateSelection(user, false) || leaveDateInput?.value || today();
+        const leaveRow = getAttendanceRowByDate(user.id, selectedLeaveDate);
+        const selectedHoliday = getCompanyHoliday(user.category, selectedLeaveDate);
+        const selectedSchedule = getScheduleForDate(user, selectedLeaveDate);
+        const canRequestLeave = !!selectedSchedule && !selectedHoliday && !(leaveRow?.checkIn || leaveRow?.checkOut || ['근무중', '퇴근완료'].includes(leaveRow?.status));
+
+        document.getElementById('dashboardCheckInBtn').disabled = !checkInGate.ok;
+        document.getElementById('dashboardCheckOutBtn').disabled = !checkOutGate.ok;
+        document.getElementById('dashboardCheckInBtn').style.opacity = checkInGate.ok ? '1' : '0.45';
+        document.getElementById('dashboardCheckOutBtn').style.opacity = checkOutGate.ok ? '1' : '0.45';
+
+        if (selectedHoliday) {
+          leaveBtn.textContent = '회사 휴일';
+          leaveBtn.disabled = true;
+          leaveBtn.style.opacity = '0.45';
+        } else if (!selectedSchedule) {
+          leaveBtn.textContent = '근무예정일만 신청';
+          leaveBtn.disabled = true;
+          leaveBtn.style.opacity = '0.45';
+        } else if (leaveRow?.status === '연차요청') {
+          leaveBtn.textContent = '같은 날짜 신청 완료';
+          leaveBtn.disabled = false;
+          leaveBtn.style.opacity = '1';
+        } else if (leaveRow?.status === '연차승인' || leaveRow?.status === '연차') {
+          leaveBtn.textContent = '다른 날짜 연차 신청';
+          leaveBtn.disabled = false;
+          leaveBtn.style.opacity = '1';
+        } else if (leaveRow?.status === '연차반려') {
+          leaveBtn.textContent = '연차 다시 신청';
+          leaveBtn.disabled = !canRequestLeave;
+          leaveBtn.style.opacity = canRequestLeave ? '1' : '0.45';
+        } else {
+          leaveBtn.textContent = '연차 신청';
+          leaveBtn.disabled = !canRequestLeave;
+          leaveBtn.style.opacity = canRequestLeave ? '1' : '0.45';
+        }
+
+        renderDashboardSubmissionControls(user, weeklyAssignments);
+
+        title.textContent = '직원 업무 대시보드';
+        desc.textContent = '출퇴근, 연차 신청, 현재 노출 과제 확인, 연차 결과 확인, 이미지 제출을 한 화면에서 처리하실 수 있습니다.';
+        hero.innerHTML = `<strong>현재 노출 과제: ${activeWeekLabel}</strong><div class="small" style="margin-top:8px; color:var(--muted);">마감일이 지난 주차는 자동으로 넘어가고, 다음 주 과제가 있으면 해당 과제가 먼저 표시됩니다.</div>`;
+        if (getCompanyHoliday(user.category, today())) {
+          const holiday = getCompanyHoliday(user.category, today());
+          syncAttendanceMessage(`오늘은 회사 휴일${holiday?.reason ? `(${holiday.reason})` : ''}입니다. 출퇴근과 연차 신청은 근무예정일 기준으로만 처리됩니다.`);
+        } else if (getTodayAttendanceRow(user.id)?.status === '연차요청') {
+          syncAttendanceMessage('오늘 연차 신청이 저장되어 관리자 승인 대기 중입니다. 다른 날짜 연차도 바로 이어서 신청하실 수 있습니다.');
+        } else if (getTodayAttendanceRow(user.id)?.status === '연차승인' || getTodayAttendanceRow(user.id)?.status === '연차') {
+          syncAttendanceMessage('오늘은 승인된 연차입니다. 출퇴근 기록은 비활성화되며 다른 날짜 연차는 계속 신청할 수 있습니다.');
+        } else {
+          syncAttendanceMessage(checkInGate.ok || checkOutGate.ok ? '연차는 근무예정일만 신청할 수 있으며, 회사 휴일은 자동으로 휴일로 표시됩니다.' : `${checkInGate.reason} / ${checkOutGate.reason}`);
+        }
+        content.innerHTML = `
+          <div style="margin-top:16px;">
+            <h3 style="margin:0 0 8px;">${activeWeekLabel} 과제 제출</h3>
+            <div class="small" style="margin-bottom:12px;">과제 내용은 아래 카드에서 확인하고, 이미지 파일 선택과 제출 버튼은 상단 출퇴근 · 연차 영역에서 바로 진행해 주세요.</div>
+            <div class="grid-2">${getWorkerAssignmentCardsHtml(user, weeklyAssignments, 'large', '이번 주 등록된 과제가 없습니다.', false, false)}</div>
+          </div>
+          <div class="hero-preview-wrap" style="margin-top:16px;">
+            <h3 style="margin:0 0 8px;">${activeWeekLabel} 예시 이미지 크게 보기</h3>
+            <div class="small" style="margin-bottom:14px;">현재 노출 과제 카드 확인 뒤 바로 아래에서 예시 이미지를 크게 비교하실 수 있습니다. 필요하시면 이미지를 눌러 원본도 확인하실 수 있습니다.</div>
+            <div class="hero-preview-stage">
+              ${heroImages.length ? renderReferenceImages(heroImages, 'hero') : '<div class="empty">이번 주 등록된 예시 이미지가 없습니다.</div>'}
+            </div>
+          </div>
+          ${otherAssignments.length ? `
+            <div style="margin-top:16px;">
+              <h3 style="margin:0 0 8px;">기타 진행 과제</h3>
+              <div class="small" style="margin-bottom:12px;">이번 주 과제가 아닌 항목은 아래에서 확인하실 수 있습니다.</div>
+              <div class="grid-2">${getWorkerAssignmentCardsHtml(user, otherAssignments, 'default', '', true, true)}</div>
+            </div>
+          ` : ''}
+        `;
+      }
+    }
+    function renderReferenceImages(images = [], variant = 'default') {
+      if (!images.length) return '<div class="small">예시 이미지가 없습니다.</div>';
+      const sizeClass = variant === 'hero' ? ' assignment hero' : (variant === 'large' ? ' assignment large' : ' assignment');
+      const caption = variant === 'hero' ? '대시보드 확대 보기 · 클릭 시 원본 열기' : '클릭하여 크게 보기';
+      return `<div class="thumbs">${images.map(img => `
+        <div class="thumb-wrap">
+          <a class="thumb-link" href="${img.dataUrl}" target="_blank" rel="noopener noreferrer" title="원본 크게 보기">
+            <img class="thumb${sizeClass}" src="${img.dataUrl}" alt="${escapeHtml(img.name)}">
+          </a>
+          <div class="thumb-caption">${escapeHtml(img.name)} · ${caption}</div>
+        </div>
+      `).join('')}</div>`;
+    }
+
+    function getAssignmentWeekLabel(assignment) {
+      const wk = assignment?.createdWeek || weekKeyFromDateStr(assignment?.createdAt || today());
+      return getAssignmentTitleByWeek(wk);
+    }
+
+    function getAssignmentKeywords(assignment) {
+      const numbered = String(assignment?.description || '')
+        .split(/\n+/)
+        .map(line => line.trim())
+        .map(line => line.replace(/^\d+[.)]\s*/, '').trim())
+        .map(line => line.replace(/^[-•]\s*/, '').trim())
+        .filter(Boolean)
+        .filter(line => !line.includes('구글 슬라이드'))
+        .slice(0, 4);
+      if (numbered.length) return numbered;
+      const base = [assignment?.title, assignment?.description]
+        .join(' ')
+        .replace(/[·,:()]/g, ' ')
+        .split(/\s+/)
+        .map(v => v.trim())
+        .filter(Boolean)
+        .filter(v => v.length >= 2)
+        .slice(0, 4);
+      return base.length ? base : ['부채', '복숭아', '광주리', '한옥'];
+    }
+
+    function getAssignmentGuideHtml(assignment, user) {
+      const targetWeek = getAssignmentWeekValue(assignment);
+      const baseWorkDays = Math.max(1, Math.min(4, user?.workDays?.length || 1));
+      const leaveDays = Math.min(baseWorkDays, getWorkerLeaveDays(user?.id, targetWeek));
+      const effectiveDays = Math.max(0, baseWorkDays - leaveDays);
+      const baseTarget = getWorkerBaseWeeklyTarget(user);
+      const adjustedTarget = getWorkerWeeklyTarget(user, targetWeek);
+      const chips = Array.from({ length: baseWorkDays + 1 }, (_, idx) => {
+        const workDayCount = baseWorkDays - idx;
+        const target = baseWorkDays > 0 ? Math.max(0, Math.round(baseTarget * (workDayCount / baseWorkDays))) : 0;
+        return `<span class="qty-chip ${workDayCount === effectiveDays ? 'accent' : ''}">${target}장 · ${workDayCount}일</span>`;
+      }).join('');
+      return `
+        <div class="rule-grid">
+          <div class="rule-stack">
+            <div class="rule-item"><strong>작업 안내</strong><div class="small">작업물마다 이름과 날짜가 구분되도록 정리해 주시고, 한 장에는 하나의 시안이나 그림이 또렷하게 보이도록 준비해 주세요.</div></div>
+            <div class="rule-item"><strong>업로드 안내</strong><div class="small">사진이나 캡처는 정면 기준으로 잘 보이게 업로드해 주시고, 작업한 날 바로 업로드해 주시면 관리자가 검수하기 편합니다.</div></div>
+          </div>
+          <div class="guide-note">
+            <strong>이번 주 수행 기준</strong>
+            <div class="small">개인별 기본 주간 제출 기준은 <b>${baseTarget}장</b>이며, 이번 주 연차 ${leaveDays}일이 반영되어 현재 기준은 <b>${adjustedTarget}장</b>입니다.</div>
+            <div class="qty-guide">${chips}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getWorkerAssignmentCardsHtml(user, assignmentList = null, imageVariant = 'default', emptyText = '내 소속에 등록된 과제가 없어.', showExampleImages = true, showUploadControls = true) {
+      const items = assignmentList || workerAssignments(user);
+      if (!items.length) return emptyText ? `<div class="empty">${emptyText}</div>` : '';
+      return items.map(a => {
+        const sub = submissions.find(s => s.assignmentId === a.id && s.userId === user.id);
+        const keywords = getAssignmentKeywords(a);
+        const thumbHtml = sub?.images?.length ? `
+          <div class="thumbs">
+            ${sub.images.map(img => `<div class="thumb-wrap"><a class="thumb-link" href="${img.dataUrl}" target="_blank" rel="noopener noreferrer"><img class="thumb" src="${img.dataUrl}" alt="${escapeHtml(img.name)}"></a><div class="thumb-caption">${escapeHtml(img.name)} · 제출본</div></div>`).join('')}
+          </div>` : '';
+        return `
+          <div class="assignment-sheet">
+            <div class="sheet-kicker">🎨 ${getAssignmentWeekLabel(a)} · ${escapeHtml(categoryLabel[a.category])}</div>
+            <h4 class="sheet-title">${escapeHtml(a.title)}</h4>
+            <p class="sheet-desc">${escapeHtml(a.description)}</p>
+            <div class="meta">
+              <span class="badge accent">마감 ${a.dueDate}</span>
+              <span class="badge">예시 ${a.referenceImages?.length || 0}장</span>
+              ${sub ? `<span class="badge ${sub.status === '저장완료' ? 'ok' : 'warn'}">${sub.status}</span>` : '<span class="badge danger">미제출</span>'}
+            </div>
+            ${getAssignmentGuideHtml(a, user)}
+            <div class="keyword-box">
+              <h5>이번 과제 포인트</h5>
+              <div class="keyword-list">${keywords.map((kw, idx) => `<span class="keyword-pill">${idx + 1}. ${escapeHtml(kw)}</span>`).join('')}</div>
+            </div>
+            ${showExampleImages ? `
+              <div class="keyword-box">
+                <h5>예시 이미지</h5>
+                <div class="small">여러 장 중 마음에 드는 이미지를 참고해서 작업해도 되고, 이미지를 눌러 크게 확인할 수 있어.</div>
+                ${renderReferenceImages(a.referenceImages || [], imageVariant)}
+              </div>
+            ` : ''}
+            ${showUploadControls ? `
+              <form onsubmit="submitAssignmentImages(event, ${a.id})">
+                <div class="field" style="margin-top:14px;">
+                  <label>이미지 파일 제출</label>
+                  <input class="input" type="file" name="images" accept="image/*" multiple />
+                  <div class="small" style="margin-top:8px;">기본 권장 기준은 하루 3장이며, 연차 사용 일수는 자동 반영되어 주간 기준 장수가 조정됩니다.</div>
+                </div>
+                <div class="btn-row">
+                  <button class="btn primary" type="submit">${sub ? '이미지 다시 제출' : '이미지 제출'}</button>
+                </div>
+              </form>
+            ` : `
+              <div class="msg" style="margin-top:14px;">이미지 파일 선택과 제출 버튼은 상단 출퇴근 · 연차 영역 옆으로 이동했습니다.</div>
+            `}
+            ${sub ? `<div class="keyword-box"><h5>내 마지막 제출</h5><div class="small">마지막 제출 ${sub.submittedAt} · ${sub.images.length}장</div>${thumbHtml}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAssignments() {
+      const user = currentUser();
+      if (!user) return;
+      const lock = document.getElementById('assignmentLock');
+      const list = document.getElementById('assignmentList');
+      const summary = document.getElementById('assignmentTemplateSummary');
+      const board = document.getElementById('assignmentBoardList');
+      const weekSelect = document.getElementById('assignmentTemplateWeekSelect');
+
+      if (user.role !== 'admin') {
+        if (lock) lock.innerHTML = '<div class="msg">직원 화면에서는 과제 등록 메뉴를 쓰지 않아.</div>';
+        if (list) list.innerHTML = '';
+        if (summary) summary.textContent = '';
+        if (board) board.innerHTML = '';
+        return;
+      }
+
+      const options = getAssignmentTemplateOptions();
+      const targetWeek = getSelectedAssignmentWeek();
+      if (weekSelect) {
+        weekSelect.innerHTML = options.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
+        weekSelect.value = String(assignmentTemplateWeekOffset);
+      }
+      if (summary) {
+        summary.innerHTML = `${options.find(opt => opt.week === targetWeek)?.label || getSubmissionWeekLabel(targetWeek)} · 회사별 4개 과제틀만 유지되고, 저장하면 같은 주차/같은 회사 카드를 덮어써.`;
+      }
+      if (lock) {
+        lock.innerHTML = '<div class="msg">과제 등록은 회사별 4개 카드만 유지합니다. 이번 주를 수정하거나 차주를 예약할 때 같은 틀에서 저장하시면 됩니다.</div>';
+      }
+
+      const cards = ['A','B','C','D'].map(code => {
+        const item = getAssignmentByCategoryAndWeek(code, targetWeek);
+        return `
+          <div class="card template-card">
+            <h3 style="margin-top:0;">${categoryLabel[code]}</h3>
+            <div class="small" style="margin-bottom:12px;">${getSubmissionWeekLabel(targetWeek)} 전용 카드 · 기존 카드가 있으면 수정 저장되고 없으면 새로 예약돼.</div>
+            <div class="field">
+              <label>과제 제목</label>
+              <input class="input" id="assignment-title-${code}" value="${escapeHtml(item?.title || getAssignmentTitleByWeek(targetWeek))}" placeholder="예: 26년 5월 3주차" readonly />
+              <div class="small" style="margin-top:8px;">제목은 선택한 주차 기준으로 자동 설정됩니다.</div>
+            </div>
+            <div class="field">
+              <label>과제 설명</label>
+              <textarea id="assignment-description-${code}" rows="5" placeholder="예: 1. 부채&#10;2. 복숭아&#10;3. 광주리&#10;4. 한옥">${escapeHtml(item?.description || '')}</textarea>
+            </div>
+            <div class="field">
+              <label>마감일</label>
+              <input class="input" id="assignment-due-${code}" type="date" value="${item?.dueDate || getAssignmentDefaultDueDate(targetWeek)}" />
+            </div>
+            <div class="field">
+              <label>예시 이미지 교체 업로드</label>
+              <input class="input" id="assignment-files-${code}" type="file" accept="image/*" multiple />
+              <div class="small" style="margin-top:8px;">새 이미지를 올리지 않으면 기존 예시 이미지를 유지해. 최대 12장.</div>
+            </div>
+            <div class="keyword-box">
+              <h5>현재 예시 이미지</h5>
+              ${item?.referenceImages?.length ? renderReferenceImages(item.referenceImages, 'default') : '<div class="small">아직 예시 이미지가 없어.</div>'}
+            </div>
+            <div class="btn-row">
+              <button class="btn primary" type="button" onclick="saveAssignmentTemplate('${code}')">${item ? '과제 수정 저장' : '과제 생성 저장'}</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      if (list) list.innerHTML = cards;
+
+      const boardCards = ['A','B','C','D'].map(code => {
+        const item = getAssignmentByCategoryAndWeek(code, targetWeek);
+        if (!item) {
+          return `<div class="card"><h4 style="margin-top:0;">${categoryLabel[code]}</h4><div class="empty">아직 저장된 과제가 없어.</div></div>`;
+        }
+        return `
+          <div class="assignment-sheet">
+            <div class="sheet-kicker">📌 ${getAssignmentWeekLabel(item)} · ${escapeHtml(categoryLabel[code])}</div>
+            <h4 class="sheet-title">${escapeHtml(item.title)}</h4>
+            <p class="sheet-desc">${escapeHtml(item.description)}</p>
+            <div class="meta"><span class="badge accent">마감 ${item.dueDate}</span><span class="badge">예시 ${item.referenceImages?.length || 0}장</span></div>
+            <div class="keyword-box">
+              <h5>저장 상태</h5>
+              <div class="keyword-list">${getAssignmentKeywords(item).map((kw, idx) => `<span class="keyword-pill">${idx + 1}. ${escapeHtml(kw)}</span>`).join('')}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      if (board) board.innerHTML = boardCards;
+    }
+
+    async function submitAssignmentImages(event, assignmentId) {
+      event.preventDefault();
+      const user = currentUser();
+      if (!user || user.role !== 'worker') return;
+      const assignment = assignments.find(a => a.id === assignmentId);
+      if (!assignment || assignment.category !== user.category) {
+        alert('내 소속 과제만 제출할 수 있어.');
+        return;
+      }
+      const input = event.target.querySelector('input[name="images"]');
+      const files = Array.from(input.files || []);
+      if (!files.length) {
+        alert('이미지 파일을 선택해줘.');
+        return;
+      }
+      if (files.length > 12) {
+        alert('한 번에 최대 12장까지만 제출할 수 있어.');
+        return;
+      }
+
+      const existing = submissions.find(s => s.assignmentId === assignmentId && s.userId === user.id);
+      const todayUsed = countImagesToday(user.id, existing?.id || null);
+      const weekUsed = countImagesWeek(user.id, existing?.id || null);
+
+      const images = await Promise.all(files.map(readFileAsDataUrl));
+      const payload = images.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
+
+      if (existing) {
+        existing.images = payload;
+        existing.submittedAt = nowText();
+        existing.submittedDate = today();
+        existing.submittedWeek = getAssignmentWeekValue(assignment);
+        existing.status = '제출완료';
+      } else {
+        submissions.unshift({
+          id: Date.now(),
+          assignmentId,
+          userId: user.id,
+          images: payload,
+          submittedAt: nowText(),
+          submittedDate: today(),
+          submittedWeek: getAssignmentWeekValue(assignment),
+          status: '제출완료'
+        });
+      }
+      save(SUBMISSIONS_KEY, submissions);
+      syncBackups();
+      renderAll();
+    }
+    window.submitAssignmentImages = submitAssignmentImages;
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getLeaveStatusDetail(row) {
+      if (!row) return '-';
+      if (row.status === '연차요청') return `신청 ${row.leaveRequestedAt || row.updatedAt || '-'}`;
+      if (row.status === '연차승인' || row.status === '연차') return `신청 ${row.leaveRequestedAt || '-'} / 승인 ${row.leaveApprovedAt || '-'} / 승인자 ${row.leaveApprovedBy || '-'}`;
+      if (row.status === '연차반려') return `신청 ${row.leaveRequestedAt || '-'} / 반려 ${row.leaveRejectedAt || '-'}`;
+      return '-';
+    }
+
+    function renderAttendance() {
+      const user = currentUser();
+      if (!user) return;
+      const workerCard = document.getElementById('workerAttendanceCard');
+      const adminCard = document.getElementById('adminAttendanceCard');
+      const adminLeaveCard = document.getElementById('adminLeaveCard');
+
+      if (user.role === 'admin') {
+        workerCard.classList.add('hidden');
+        adminCard.classList.remove('hidden');
+        if (adminLeaveCard) adminLeaveCard.classList.remove('hidden');
+
+        const selectedCategory = adminDepartmentFilter;
+        const adminMonth = getAdminAttendanceMonth();
+        const adminTitle = adminCard.querySelector('h3');
+        const attendanceDeptSelect = document.getElementById('attendanceDepartmentFilter');
+        const attendanceMonthSelect = document.getElementById('attendanceMonthFilter');
+        const attendanceWorkerSelect = document.getElementById('attendanceWorkerFilter');
+        const adminSummary = document.getElementById('adminAttendanceSummary');
+        const monthOptions = getAdminAttendanceMonthOptions(selectedCategory);
+        const companyWorkersAll = users.filter(u => u.role === 'worker' && u.category === selectedCategory);
+        if (adminAttendanceWorkerFilter && !companyWorkersAll.some(u => String(u.id) === String(adminAttendanceWorkerFilter))) adminAttendanceWorkerFilter = '';
+
+        if (attendanceDeptSelect) attendanceDeptSelect.value = selectedCategory;
+        if (attendanceMonthSelect) {
+          attendanceMonthSelect.innerHTML = monthOptions.map(month => `<option value="${month}">${month}</option>`).join('');
+          attendanceMonthSelect.value = adminMonth;
+        }
+        if (attendanceWorkerSelect) {
+          attendanceWorkerSelect.innerHTML = `<option value="">전체 직원</option>` + companyWorkersAll.map(worker => `<option value="${worker.id}">${escapeHtml(worker.name)}</option>`).join('');
+          attendanceWorkerSelect.value = adminAttendanceWorkerFilter ? String(adminAttendanceWorkerFilter) : '';
+        }
+        if (adminTitle) adminTitle.textContent = `직원 출퇴근 · 연차 전체 로그 · ${categoryLabel[selectedCategory]} · ${adminMonth}`;
+
+        const leaveRows = attendance.filter(a => ['연차요청', '연차승인', '연차반려', '연차'].includes(a.status)).filter(a => {
+          const worker = users.find(u => u.id === a.userId);
+          const workerMatch = !adminAttendanceWorkerFilter || String(worker?.id) === String(adminAttendanceWorkerFilter);
+          return worker?.category === selectedCategory && String(a.date || '').slice(0, 7) === adminMonth && workerMatch;
+        }).sort((a, b) => `${b.date} ${b.leaveRequestedAt || b.updatedAt || ''}`.localeCompare(`${a.date} ${a.leaveRequestedAt || a.updatedAt || ''}`));
+        document.getElementById('leaveRequestTable').innerHTML = leaveRows.length ? leaveRows.map(a => {
+          const worker = users.find(u => u.id === a.userId);
+          return `<tr>
+            <td>${worker?.name || '-'}</td>
+            <td>${worker?.category ? categoryLabel[worker.category] : '-'}</td>
+            <td>${a.date}</td>
+            <td>${a.leaveRequestedAt || a.updatedAt || '-'}</td>
+            <td><span class="badge ${a.status === '연차승인' || a.status === '연차' ? 'ok' : (a.status === '연차요청' ? 'warn' : 'danger')}">${a.status}</span></td>
+            <td>
+              <div class="btn-row" style="margin-top:0;">
+                <button class="btn accent" type="button" onclick="approveLeaveRequest(${a.id})">승인</button>
+                <button class="btn outline" type="button" onclick="rejectLeaveRequest(${a.id})">반려</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="6"><div class="empty">선택한 회사/월의 연차 신청 또는 승인 내역이 아직 없습니다.</div></td></tr>';
+
+        const companyWorkers = companyWorkersAll.filter(u => !adminAttendanceWorkerFilter || String(u.id) === String(adminAttendanceWorkerFilter));
+        const adminRows = companyWorkers.flatMap(worker => getWorkerMonthlyScheduleRows(worker, adminMonth).map(item => ({ worker, ...item }))).sort((a, b) => `${a.worker.name} ${a.date}`.localeCompare(`${b.worker.name} ${b.date}`));
+        const scheduledCount = adminRows.filter(item => !!item.schedule).length;
+        const holidayCount = adminRows.filter(item => !!item.holiday).length;
+        const workedCount = adminRows.filter(item => ['근무중', '퇴근완료', '수정완료'].includes(item.row?.status)).length;
+        const approvedLeaveCount = adminRows.filter(item => ['연차승인', '연차'].includes(item.row?.status)).length;
+        const pendingLeaveCount = adminRows.filter(item => item.row?.status === '연차요청').length;
+        const missingCount = adminRows.filter(item => item.schedule && !item.holiday && !item.row).length;
+        const selectedWorkerName = adminAttendanceWorkerFilter ? (companyWorkersAll.find(u => String(u.id) === String(adminAttendanceWorkerFilter))?.name || '') : '';
+        if (adminSummary) adminSummary.textContent = `${categoryLabel[selectedCategory]} · ${adminMonth} · 직원 ${companyWorkers.length}명 · 예정 스케줄 ${scheduledCount}건 · 회사 휴일 ${holidayCount}건 · 출퇴근 기록 ${workedCount}건 · 승인 연차 ${approvedLeaveCount}건 · 신청 대기 ${pendingLeaveCount}건 · 미기록 ${missingCount}건${selectedWorkerName ? ` · 선택 직원 ${selectedWorkerName}` : ''}`;
+
+        document.getElementById('attendanceAdminTable').innerHTML = adminRows.length ? adminRows.map(item => {
+          const scheduleText = getScheduleDisplayText(item.worker, item.date);
+          const leaveDetail = getLeaveStatusDetail(item.row);
+          return `<tr>
+            <td>${item.worker.name}</td>
+            <td>${categoryLabel[item.worker.category]}</td>
+            <td>${item.row ? `<input class="input" type="date" id="date-${item.row.id}" value="${item.date}" style="min-width:150px;">` : item.date}</td>
+            <td>${dayLabel[item.dayIndex]}</td>
+            <td>${scheduleText}</td>
+            <td>${item.row ? `<input class="input" type="time" id="checkin-${item.row.id}" value="${item.row.checkIn || ''}" style="min-width:120px;">` : '-'}</td>
+            <td>${item.row ? `<input class="input" type="time" id="checkout-${item.row.id}" value="${item.row.checkOut || ''}" style="min-width:120px;">` : '-'}</td>
+            <td>${item.row ? `<select class="select" id="status-${item.row.id}" style="min-width:150px;">
+                <option value="대기" ${item.row.status === '대기' ? 'selected' : ''}>대기</option>
+                <option value="근무중" ${item.row.status === '근무중' ? 'selected' : ''}>근무중</option>
+                <option value="퇴근완료" ${item.row.status === '퇴근완료' ? 'selected' : ''}>퇴근완료</option>
+                <option value="수정완료" ${item.row.status === '수정완료' ? 'selected' : ''}>수정완료</option>
+                <option value="연차요청" ${item.row.status === '연차요청' ? 'selected' : ''}>연차요청</option>
+                <option value="연차승인" ${item.row.status === '연차승인' ? 'selected' : ''}>연차승인</option>
+                <option value="연차반려" ${item.row.status === '연차반려' ? 'selected' : ''}>연차반려</option>
+                <option value="연차" ${item.row.status === '연차' ? 'selected' : ''}>연차(기존)</option>
+              </select>` : (item.holiday ? '회사 휴일' : (item.schedule ? '미기록' : '-'))}</td>
+            <td>${leaveDetail !== '-' ? leaveDetail : (item.holiday ? `회사 휴일${item.holiday.reason ? ` · ${item.holiday.reason}` : ''}` : '-')}</td>
+            <td>${item.row ? `<button class="btn accent" type="button" onclick="updateAttendanceRecord(${item.row.id})">수정 저장</button>` : '<span class="small">기록 없음</span>'}</td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="10"><div class="empty">선택한 회사/월의 예상 스케줄 또는 출퇴근 기록이 없습니다.</div></td></tr>';
+        return;
+      }
+
+      workerCard.classList.remove('hidden');
+      adminCard.classList.add('hidden');
+      if (adminLeaveCard) adminLeaveCard.classList.add('hidden');
+      const monthSelect = document.getElementById('workerAttendanceMonth');
+      const summary = document.getElementById('workerAttendanceSummary');
+      const monthOptions = getWorkerAttendanceMonthOptions(user);
+      if (!workerAttendanceMonthFilter || !monthOptions.includes(workerAttendanceMonthFilter)) workerAttendanceMonthFilter = monthOptions[0] || today().slice(0, 7);
+      if (monthSelect) {
+        monthSelect.innerHTML = monthOptions.map(month => `<option value="${month}">${month}</option>`).join('');
+        monthSelect.value = workerAttendanceMonthFilter;
+      }
+      const myRows = getWorkerMonthlyScheduleRows(user, workerAttendanceMonthFilter);
+      const scheduledCount = myRows.filter(item => !!item.schedule).length;
+      const holidayCount = myRows.filter(item => !!item.holiday).length;
+      const workedCount = myRows.filter(item => ['근무중', '퇴근완료', '수정완료'].includes(item.row?.status)).length;
+      const approvedLeaveCount = myRows.filter(item => ['연차승인', '연차'].includes(item.row?.status)).length;
+      const pendingLeaveCount = myRows.filter(item => item.row?.status === '연차요청').length;
+      const missingCount = myRows.filter(item => item.schedule && !item.holiday && !item.row).length;
+      if (summary) summary.textContent = `${workerAttendanceMonthFilter} 예정 근무 ${scheduledCount}일 · 회사 휴일 ${holidayCount}일 · 출퇴근 기록 ${workedCount}일 · 승인 연차 ${approvedLeaveCount}일 · 신청 대기 ${pendingLeaveCount}일 · 미기록 ${missingCount}일`;
+      document.getElementById('myAttendanceTable').innerHTML = myRows.length ? myRows.map(item => {
+        const scheduleText = item.schedule ? `${item.schedule.start} ~ ${item.schedule.end}` : '-';
+        const plannedText = item.holiday ? `회사 휴일${item.holiday.reason ? ` · ${item.holiday.reason}` : ''}${item.schedule ? ` · 원래 ${scheduleText}` : ''}` : scheduleText;
+        const statusText = item.row?.status || (item.holiday ? '회사 휴일' : (item.schedule ? '미기록' : '-'));
+        return `
+          <tr>
+            <td>${item.date}</td>
+            <td>${dayLabel[item.dayIndex]}</td>
+            <td>${plannedText}</td>
+            <td>${item.row?.checkIn || '-'}</td>
+            <td>${item.row?.checkOut || '-'}</td>
+            <td>${statusText}</td>
+          </tr>
+        `;
+      }).join('') : '<tr><td colspan="6"><div class="empty">선택한 달에 표시할 근무 스케줄 또는 출퇴근/연차 기록이 없습니다.</div></td></tr>';
+    }
+
+    function renderAdmin() {
+      const user = currentUser();
+      if (!user || user.role !== 'admin') return;
+
+      const filterSelect = document.getElementById('adminDepartmentFilter');
+      const departmentSummary = document.getElementById('adminDepartmentSummary');
+      const workerOpsList = document.getElementById('workerOpsList');
+      const adminAccountSecurityCard = document.getElementById('adminAccountSecurityCard');
+      const filteredWorkers = users.filter(u => u.role === 'worker' && u.category === adminDepartmentFilter);
+
+      if (filterSelect) filterSelect.value = adminDepartmentFilter;
+      const newWorkerCategory = document.getElementById('new-worker-category');
+      if (newWorkerCategory) {
+        newWorkerCategory.value = adminDepartmentFilter;
+        const newWorkerName = document.getElementById('new-worker-name');
+        if (!newWorkerName || !newWorkerName.value.trim()) applyNewWorkerDefaultsByCategory(adminDepartmentFilter, true);
+      }
+      const holidayCategory = document.getElementById('holiday-category');
+      if (holidayCategory) holidayCategory.value = adminDepartmentFilter;
+      const holidayDate = document.getElementById('holiday-date');
+      if (holidayDate && !holidayDate.value) holidayDate.value = today();
+      if (departmentSummary) {
+        const pendingDeptLeaves = attendance.filter(a => a.status === '연차요청').filter(a => {
+          const worker = users.find(u => u.id === a.userId);
+          return worker?.category === adminDepartmentFilter;
+        }).length;
+        departmentSummary.innerHTML = `현재 선택: <b>${categoryLabel[adminDepartmentFilter]}</b> · 총 <b>${filteredWorkers.length}명</b><br>전체 인원: ${categoryLabel.A} ${getDepartmentWorkerCount('A')}명 / ${categoryLabel.B} ${getDepartmentWorkerCount('B')}명 / ${categoryLabel.C} ${getDepartmentWorkerCount('C')}명 / ${categoryLabel.D} ${getDepartmentWorkerCount('D')}명<br>해당 회사 연차 신청 대기 <b>${pendingDeptLeaves}건</b>`;
+      }
+      if (adminAccountSecurityCard) {
+        adminAccountSecurityCard.innerHTML = renderPasswordChangeCard(user, 'admin');
+      }
+
+      if (workerOpsList) {
+        workerOpsList.innerHTML = filteredWorkers.length ? filteredWorkers.map(worker => `
+          <div class="ops-item">
+            <div class="meta" style="margin-bottom:10px;">
+              <span class="badge accent">${escapeHtml(worker.name)}</span>
+              <span class="badge">${escapeHtml(categoryLabel[worker.category])}</span>
+              <span class="badge ${worker.isActive !== false ? 'ok' : 'danger'}">${worker.isActive !== false ? '활성' : '비활성'}</span>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>이름</label>
+                <input class="input" id="account-name-${worker.id}" value="${escapeHtml(worker.name)}">
+              </div>
+              <div class="field">
+                <label>이메일</label>
+                <input class="input" id="account-email-${worker.id}" value="${escapeHtml(worker.email)}">
+              </div>
+              <div class="field">
+                <label>비밀번호</label>
+                <input class="input" id="account-password-${worker.id}" value="${escapeHtml(worker.password)}">
+              </div>
+              <div class="field">
+                <label>부서</label>
+                <select class="select" id="account-category-${worker.id}">
+                  ${['A','B','C','D'].map(code => `<option value="${code}" ${worker.category === code ? 'selected' : ''}>${categoryLabel[code]}</option>`).join('')}
+                </select>
+              </div>
+              <div class="field">
+                <label>계정 상태</label>
+                <select class="select" id="account-active-${worker.id}">
+                  <option value="true" ${(worker.isActive !== false) ? 'selected' : ''}>활성</option>
+                  <option value="false" ${worker.isActive === false ? 'selected' : ''}>비활성</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>근무 스케줄</label>
+                <div class="small" style="line-height:1.8; color:var(--text);">
+                  ${[1,2,3,4,5].map(day => `<label style="display:inline-flex;align-items:center;margin-right:10px;margin-bottom:8px;"><input type="checkbox" id="workday-${worker.id}-${day}" ${worker.workDays?.includes(day) ? 'checked' : ''} style="margin-right:6px;">${dayLabel[day]}</label>`).join('')}
+                </div>
+              </div>
+              <div class="small" style="grid-column:1 / -1; margin-top:-6px;">현재 등록 근무시간: ${escapeHtml(getUserScheduleText(worker))}</div>
+              <div class="field">
+                <label>출근 시간</label>
+                <input class="input" type="time" id="workstart-${worker.id}" value="${worker.workStart || ''}">
+              </div>
+              <div class="field">
+                <label>퇴근 시간</label>
+                <input class="input" type="time" id="workend-${worker.id}" value="${worker.workEnd || ''}">
+              </div>
+              <div class="field">
+                <label>연차 총 개수</label>
+                <input class="input" type="number" min="0" id="annualleave-total-${worker.id}" value="${Number(worker.annualLeaveTotal || 0)}">
+              </div>
+              <div class="field">
+                <label>주간 제출 기준</label>
+                <input class="input" type="number" min="0" id="weeklytarget-${worker.id}" value="${Number(getWorkerBaseWeeklyTarget(worker))}">
+              </div>
+              <div class="field">
+                <label>연차 사용 현황</label>
+                <div class="small" style="line-height:1.8; color:var(--text); margin-top:10px;">사용 ${getAnnualLeaveUsed(worker.id)}일 · 잔여 ${getAnnualLeaveRemaining(worker)}일 · 신청 가능 ${getAnnualLeaveAvailable(worker)}일 · 신청 대기 ${getAnnualLeavePending(worker.id)}일</div>
+              </div>
+              <div class="field">
+                <label>제출 기준 요약</label>
+                <div class="small" style="line-height:1.8; color:var(--text); margin-top:10px;">기본 ${getWorkerBaseWeeklyTarget(worker)}장 · 현재 주차 반영 ${getWorkerWeeklyTarget(worker, weekKey())}장</div>
+              </div>
+            </div>
+            <div class="btn-row" style="margin-top:10px;">
+              <button class="btn accent" type="button" onclick="saveWorkerOps(${worker.id})">계정 + 스케줄 저장</button>
+            </div>
+          </div>
+        `).join('') : '<div class="empty">선택한 회사에 직원이 없습니다.</div>';
+      }
+
+      renderCompanyHolidayList();
+      renderBackupCenter();
+    }
+
+    function getSubmissionWeeks() {
+      return Array.from(new Set([
+        weekKey(),
+        ...submissions.map(s => s.submittedWeek || weekKeyFromDateStr(s.submittedAt)),
+        ...assignments.map(a => getAssignmentWeekValue(a))
+      ].filter(Boolean))).sort().reverse();
+    }
+
+    function getIsoWeekStartDate(weekValue) {
+      const [year, rawWeek] = String(weekValue || '').split('-W');
+      const isoYear = Number(year);
+      const isoWeek = Number(rawWeek);
+      if (!isoYear || !isoWeek) return null;
+      const jan4 = new Date(Date.UTC(isoYear, 0, 4));
+      const jan4Day = jan4.getUTCDay() || 7;
+      const monday = new Date(jan4);
+      monday.setUTCDate(jan4.getUTCDate() - (jan4Day - 1) + ((isoWeek - 1) * 7));
+      return new Date(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate());
+    }
+
+    function getMonthWeekLabelByDate(dateValue) {
+      const date = dateValue instanceof Date ? new Date(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()) : new Date(dateValue);
+      if (Number.isNaN(date.getTime())) return '-';
+      const month = date.getMonth() + 1;
+      const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+      const firstOffset = (firstDay.getDay() + 6) % 7;
+      const weekOfMonth = Math.floor((date.getDate() + firstOffset - 1) / 7) + 1;
+      return `${month}월 ${weekOfMonth}주`;
+    }
+
+    function getSubmissionWeekLabel(week) {
+      const startDate = getIsoWeekStartDate(week);
+      return startDate ? getMonthWeekLabelByDate(startDate) : (week || '-');
+    }
+
+    function getAssignmentTitleByWeek(week) {
+      const startDate = getIsoWeekStartDate(week);
+      if (!startDate) return '과제 주차';
+      return `${String(startDate.getFullYear()).slice(-2)}년 ${getMonthWeekLabelByDate(startDate)}차`;
+    }
+
+    function getAssignmentDefaultDueDate(week) {
+      const startDate = getIsoWeekStartDate(week);
+      if (!startDate) return today();
+      const friday = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      friday.setDate(friday.getDate() + 4);
+      return buildDateStr(friday.getFullYear(), friday.getMonth() + 1, friday.getDate());
+    }
+
+    function getActiveAssignmentWeekForUser(user) {
+      const mine = workerAssignments(user);
+      if (!mine.length) return weekKey();
+      const currentWeek = weekKey();
+      const currentItems = mine.filter(a => getAssignmentWeekValue(a) === currentWeek);
+      const currentOpen = currentItems.some(a => !a.dueDate || a.dueDate >= today());
+      if (currentItems.length && currentOpen) return currentWeek;
+      const weeks = Array.from(new Set(mine.map(a => getAssignmentWeekValue(a)))).sort((a, b) => {
+        const ad = getIsoWeekStartDate(a);
+        const bd = getIsoWeekStartDate(b);
+        return (ad ? ad.getTime() : 0) - (bd ? bd.getTime() : 0);
+      });
+      const currentStart = getIsoWeekStartDate(currentWeek);
+      const nextWeek = weeks.find(week => {
+        if (week === currentWeek) return false;
+        const start = getIsoWeekStartDate(week);
+        return start && (!currentStart || start.getTime() > currentStart.getTime());
+      });
+      return nextWeek || currentWeek;
+    }
+
+    function getImageExtension(img) {
+      const fileName = String(img?.name || '');
+      if (fileName.includes('.')) return fileName.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+      const dataUrl = String(img?.dataUrl || '');
+      if (dataUrl.startsWith('data:image/jpeg')) return 'jpg';
+      if (dataUrl.startsWith('data:image/png')) return 'png';
+      if (dataUrl.startsWith('data:image/webp')) return 'webp';
+      if (dataUrl.startsWith('data:image/gif')) return 'gif';
+      return 'png';
+    }
+
+    function safeFileToken(value = '') {
+      return String(value).replace(/[\/:*?"<>|]+/g, '').trim() || 'unknown';
+    }
+
+    function buildSubmissionDownloadName(week, submission, image, index) {
+      const worker = users.find(u => u.id === submission.userId);
+      const month = monthKeyFromDateStr(submission.submittedDate || String(submission.submittedAt).slice(0, 10));
+      const [year, monthNum] = String(month).split('-');
+      const [, rawWeek] = String(week || '').split('-W');
+      const ext = getImageExtension(image);
+      return `${year || '0000'}년_${monthNum || '00'}월_${Number(rawWeek || 0)}주차_${safeFileToken(worker?.name || '제출자')}_${String(index + 1).padStart(2, '0')}.${ext}`;
+    }
+
+    function triggerImageDownload(dataUrl, fileName, delay) {
+      setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, delay);
+    }
+
+    function downloadSubmissionWeekImages(week, rows) {
+      let count = 0;
+      rows.forEach(sub => {
+        (sub.images || []).forEach((img, index) => {
+          triggerImageDownload(img.dataUrl, buildSubmissionDownloadName(week, sub, img, index), count * 180);
+          count += 1;
+        });
+      });
+      return count;
+    }
+
+    function renderSubmissionManager() {
+      const user = currentUser();
+      const weekSelect = document.getElementById('submissionManageWeekSelect');
+      const deptSelect = document.getElementById('submissionManageDepartmentFilter');
+      const summary = document.getElementById('submissionManageSummary');
+      const tbody = document.getElementById('submissionTable');
+      const msg = document.getElementById('submissionManageMsg');
+      if (!weekSelect || !summary || !tbody || !msg) return;
+      if (!user || user.role !== 'admin') {
+        weekSelect.innerHTML = '<option value="">관리자 전용</option>';
+        summary.textContent = '';
+        tbody.innerHTML = '';
+        return;
+      }
+
+      const weeks = getSubmissionWeeks();
+      if (!submissionManageFilterWeek || !weeks.includes(submissionManageFilterWeek)) submissionManageFilterWeek = weeks[0] || weekKey();
+      weekSelect.innerHTML = weeks.length ? weeks.map(week => `<option value="${week}">${getSubmissionWeekLabel(week)}</option>`).join('') : '<option value="">주차 없음</option>';
+      if (submissionManageFilterWeek) weekSelect.value = submissionManageFilterWeek;
+      if (deptSelect) deptSelect.value = submissionManageDepartmentFilter;
+
+      const workerList = users.filter(u => u.role === 'worker' && (submissionManageDepartmentFilter === 'ALL' || u.category === submissionManageDepartmentFilter));
+      const rows = workerList.map(worker => {
+        const assignment = getAssignmentByCategoryAndWeek(worker.category, submissionManageFilterWeek);
+        const submission = getWorkerSubmissionForWeek(worker.id, worker.category, submissionManageFilterWeek);
+        const requiredCount = getWorkerWeeklyTarget(worker, submissionManageFilterWeek);
+        const submittedCount = countSubmissionImagesForWeek(worker.id, submissionManageFilterWeek);
+        return { worker, assignment, submission, requiredCount, submittedCount };
+      });
+
+      const totalRequired = rows.reduce((sum, row) => sum + row.requiredCount, 0);
+      const totalSubmitted = rows.reduce((sum, row) => sum + row.submittedCount, 0);
+      const completedCount = rows.filter(row => row.submittedCount >= row.requiredCount && row.requiredCount > 0).length;
+      const deptLabel = submissionManageDepartmentFilter === 'ALL' ? '전체 회사' : categoryLabel[submissionManageDepartmentFilter];
+      summary.innerHTML = submissionManageFilterWeek
+        ? `${getSubmissionWeekLabel(submissionManageFilterWeek)} · ${deptLabel} · 직원 ${rows.length}명 · 제출 기준 ${totalRequired}장 · 실제 제출 ${totalSubmitted}장 · 기준 달성 ${completedCount}명`
+        : '선택 가능한 제출 주차가 없어.';
+
+      tbody.innerHTML = rows.length ? rows.map(({ worker, submission, requiredCount, submittedCount }) => {
+        const thumbs = submission?.images?.length ? `<div class="thumbs">${submission.images.map((img, idx) => `
+          <div class="thumb-wrap">
+            <img class="thumb" src="${img.dataUrl}" alt="${escapeHtml(img.name)}">
+            <a class="download-link" href="${img.dataUrl}" download="${escapeHtml(buildSubmissionDownloadName(submissionManageFilterWeek, submission, img, idx))}">다운로드</a>
+          </div>`).join('')}</div>` : '<div class="small">제출 이미지 없음</div>';
+        const statusLabel = submission ? submission.status : '미제출';
+        const statusClass = !submission ? 'danger' : (submission.status === '저장완료' ? 'ok' : 'warn');
+        const processButtons = submission ? `
+          <div class="btn-row" style="margin-top:0;">
+            <button class="btn outline" type="button" onclick="markSubmission(${submission.id}, '확인완료')">확인</button>
+            <button class="btn accent" type="button" onclick="saveSingleSubmission(${submission.id})">저장</button>
+          </div>` : '<div class="small">제출 대기</div>';
+        return `
+          <tr>
+            <td>${worker.name}</td>
+            <td>${categoryLabel[worker.category]}</td>
+            <td>${getSubmissionWeekLabel(submissionManageFilterWeek)}</td>
+            <td><b>${requiredCount}장</b> / 제출 ${submittedCount}장</td>
+            <td>${thumbs}</td>
+            <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+            <td>${processButtons}</td>
+          </tr>
+        `;
+      }).join('') : '<tr><td colspan="7"><div class="empty">선택한 조건에 해당하는 직원이 없습니다.</div></td></tr>';
+    }
+
+    function changeSubmissionManageWeek(week) {
+      submissionManageFilterWeek = week;
+      renderSubmissionManager();
+    }
+    function changeSubmissionManageDepartment(category) {
+      submissionManageDepartmentFilter = category;
+      renderSubmissionManager();
+    }
+
+    function saveSingleSubmission(id) {
+      const sub = submissions.find(s => s.id === id);
+      if (!sub) return;
+      const week = sub.submittedWeek || weekKeyFromDateStr(sub.submittedAt);
+      sub.status = '저장완료';
+      save(SUBMISSIONS_KEY, submissions);
+      syncBackups();
+      const count = downloadSubmissionWeekImages(week, [sub]);
+      const msg = document.getElementById('submissionManageMsg');
+      if (msg) msg.textContent = `${getSubmissionWeekLabel(week)} 기준으로 선택한 제출 이미지 ${count}장을 이름 변경 후 저장했어.`;
+      renderAll();
+    }
+
+    function markSubmissionWeek(status, shouldDownload) {
+      if (!submissionManageFilterWeek) return;
+      const rows = getSubmissionRowsForManager();
+      if (!rows.length) {
+        const msg = document.getElementById('submissionManageMsg');
+        if (msg) msg.textContent = '선택한 조건에 처리할 제출 과제가 없어.';
+        return;
+      }
+      rows.forEach(row => { row.status = status; });
+      save(SUBMISSIONS_KEY, submissions);
+      syncBackups();
+      const downloaded = shouldDownload ? downloadSubmissionWeekImages(submissionManageFilterWeek, rows) : 0;
+      const deptLabel = submissionManageDepartmentFilter === 'ALL' ? '전체 회사' : categoryLabel[submissionManageDepartmentFilter];
+      const msg = document.getElementById('submissionManageMsg');
+      if (msg) msg.textContent = shouldDownload
+        ? `${getSubmissionWeekLabel(submissionManageFilterWeek)} · ${deptLabel} 이미지 ${downloaded}장을 이름 변경 후 한 번에 저장했어.`
+        : `${getSubmissionWeekLabel(submissionManageFilterWeek)} · ${deptLabel} 제출 과제를 한 번에 확인 처리했어.`;
+      renderAll();
+    }
+
+    function renderBackupCenter() {
+      const summary = document.getElementById('backupSummary');
+      const monthSelect = document.getElementById('attendanceBackupSelect');
+      const weekSelect = document.getElementById('assignmentBackupSelect');
+      const submissionWeekSelect = document.getElementById('submissionBackupSelect');
+      if (!summary || !monthSelect || !weekSelect || !submissionWeekSelect) return;
+
+      const months = Object.keys(attendanceBackups || {}).sort().reverse();
+      const weeks = Object.keys(assignmentBackups || {}).sort().reverse();
+      const submissionWeeks = Object.keys(submissionBackups || {}).sort().reverse();
+
+      summary.textContent = `전체 ${users.length}명 · 직원 ${users.filter(u => u.role === 'worker').length}명 · 과제 ${assignments.length}건 · 제출 ${submissions.length}건 · 출퇴근 ${attendance.length}건`;
+      monthSelect.innerHTML = months.length ? months.map(month => `<option value="${month}">${month}</option>`).join('') : '<option value="">백업 없음</option>';
+      weekSelect.innerHTML = weeks.length ? weeks.map(week => `<option value="${week}">${week}</option>`).join('') : '<option value="">백업 없음</option>';
+      submissionWeekSelect.innerHTML = submissionWeeks.length ? submissionWeeks.map(week => `<option value="${week}">${week}</option>`).join('') : '<option value="">백업 없음</option>';
+    }
+
+    function changeAdminDepartment(category) {
+      adminDepartmentFilter = category;
+      renderAdmin();
+      renderAttendance();
+      renderSubmissionManager();
+    }
+    function changeAdminAttendanceDepartment(category) {
+      adminDepartmentFilter = category;
+      renderAdmin();
+      renderAttendance();
+      renderSubmissionManager();
+    }
+    function changeAdminAttendanceMonth(month) {
+      adminAttendanceMonthFilter = month;
+      renderAttendance();
+    }
+    function changeAdminAttendanceWorker(value) {
+      adminAttendanceWorkerFilter = String(value || '');
+      renderAttendance();
+    }
+    function changeWorkerAssignmentWeek(value) {
+      workerAssignmentViewWeek = value || getShiftedWeekKey(0);
+      renderWorkerAssignmentsPage();
+    }
+    function changeAssignmentTemplateWeek(value) {
+      assignmentTemplateWeekOffset = Number(value || 0);
+      renderAssignments();
+    }
+
+    async function saveAssignmentTemplate(category) {
+      const user = currentUser();
+      if (!user || user.role !== 'admin') return;
+      const targetWeek = getSelectedAssignmentWeek();
+      const titleInput = document.getElementById(`assignment-title-${category}`);
+      const descInput = document.getElementById(`assignment-description-${category}`);
+      const dueInput = document.getElementById(`assignment-due-${category}`);
+      const fileInput = document.getElementById(`assignment-files-${category}`);
+      const title = getAssignmentTitleByWeek(targetWeek);
+      if (titleInput) titleInput.value = title;
+      const description = descInput?.value.trim() || '';
+      const dueDate = dueInput?.value || getAssignmentDefaultDueDate(targetWeek);
+      const files = Array.from(fileInput?.files || []);
+      if (!description) {
+        document.getElementById('assignmentMsg').textContent = `${categoryLabel[category]} 과제 설명을 입력해줘.`;
+        return;
+      }
+      if (files.length > 12) {
+        document.getElementById('assignmentMsg').textContent = `${categoryLabel[category]} 예시 이미지는 최대 12장까지 가능해.`;
+        return;
+      }
+      const duplicates = assignments.filter(a => a.category === category && getAssignmentWeekValue(a) === targetWeek).sort((a, b) => b.id - a.id);
+      const existing = duplicates[0] || null;
+      assignments = assignments.filter(a => !(a.category === category && getAssignmentWeekValue(a) === targetWeek && (!existing || a.id !== existing.id)));
+      let referenceImages = existing?.referenceImages || [];
+      if (files.length) {
+        const rawImages = await Promise.all(files.map(readFileAsDataUrl));
+        referenceImages = rawImages.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
+      }
+      if (existing) {
+        existing.title = title;
+        existing.description = description;
+        existing.dueDate = dueDate;
+        existing.createdWeek = targetWeek;
+        existing.createdBy = user.id;
+        existing.updatedAt = nowText();
+        existing.referenceImages = referenceImages;
+      } else {
+        assignments.unshift({
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          title,
+          description,
+          dueDate,
+          category,
+          createdAt: nowText(),
+          createdWeek: targetWeek,
+          createdBy: user.id,
+          referenceImages
+        });
+      }
+      save(ASSIGNMENTS_KEY, assignments);
+      syncBackups();
+      document.getElementById('assignmentMsg').textContent = `${categoryLabel[category]} · ${getSubmissionWeekLabel(targetWeek)} 과제를 저장했어.`;
+      renderAll();
+    }
+
+    function changeWorkerAttendanceMonth(month) {
+      workerAttendanceMonthFilter = month || today().slice(0, 7);
+      renderAttendance();
+    }
+
+    function addWorkerAccount() {
+      const name = document.getElementById('new-worker-name')?.value.trim() || '';
+      const emailRaw = document.getElementById('new-worker-email')?.value.trim().toLowerCase() || '';
+      const password = document.getElementById('new-worker-password')?.value.trim() || '';
+      const category = document.getElementById('new-worker-category')?.value || adminDepartmentFilter;
+      const isActive = document.getElementById('new-worker-active')?.value !== 'false';
+      const annualLeaveTotal = Math.max(0, Number(document.getElementById('new-worker-annualleave')?.value || 0));
+      const weeklySubmissionTarget = Math.max(0, Number(document.getElementById('new-worker-weeklytarget')?.value || 0));
+      const workDays = [1,2,3,4,5].filter(day => document.getElementById(`new-worker-day-${day}`)?.checked);
+      const workStart = document.getElementById('new-worker-start')?.value || '';
+      const workEnd = document.getElementById('new-worker-end')?.value || '';
+      const msg = document.getElementById('addWorkerMsg');
+
+      if (!name) {
+        if (msg) msg.textContent = '신규 인원 이름을 입력해 주세요.';
+        return;
+      }
+      if (!password) {
+        if (msg) msg.textContent = '신규 인원 비밀번호를 입력해 주세요.';
+        return;
+      }
+      if (!workDays.length) {
+        if (msg) msg.textContent = '최소 1개 이상의 근무요일을 선택해 주세요.';
+        return;
+      }
+      if (!workStart || !workEnd) {
+        if (msg) msg.textContent = '출근 시간과 퇴근 시간을 모두 입력해 주세요.';
+        return;
+      }
+      if (users.some(u => u.role === 'worker' && u.name === name)) {
+        if (msg) msg.textContent = '같은 이름의 직원이 이미 등록되어 있습니다.';
+        return;
+      }
+      const email = emailRaw || `worker${Math.max(1, users.filter(u => u.role === 'worker').length + 1)}@company.com`;
+      if (users.some(u => String(u.email || '').toLowerCase() === email)) {
+        if (msg) msg.textContent = '이미 사용 중인 이메일입니다.';
+        return;
+      }
+      const nextId = Math.max(...users.map(u => Number(u.id || 0)), 0) + 1;
+      const dailySchedules = workDays.reduce((acc, day) => {
+        acc[day] = { day, start: workStart, end: workEnd };
+        return acc;
+      }, {});
+      users.push({
+        id: nextId,
+        name,
+        email,
+        password,
+        role: 'worker',
+        category,
+        company: categoryLabel[category],
+        workDays,
+        workStart,
+        workEnd,
+        dailySchedules,
+        annualLeaveTotal,
+        weeklySubmissionTarget,
+        isActive
+      });
+      save(USERS_KEY, users);
+      syncBackups();
+      adminDepartmentFilter = category;
+      ['name','email','password'].forEach(key => {
+        const el = document.getElementById(`new-worker-${key}`);
+        if (el) el.value = key === 'password' ? '12341234' : '';
+      });
+      const leaveEl = document.getElementById('new-worker-annualleave');
+      if (leaveEl) leaveEl.value = '0';
+      const startEl = document.getElementById('new-worker-start');
+      if (startEl) startEl.value = workStart;
+      const endEl = document.getElementById('new-worker-end');
+      if (endEl) endEl.value = workEnd;
+      const weeklyEl = document.getElementById('new-worker-weeklytarget');
+      if (weeklyEl) weeklyEl.value = String(weeklySubmissionTarget);
+      applyNewWorkerDefaultsByCategory(category);
+      if (msg) msg.textContent = `${name} 신규 인원이 등록되었습니다. 아래 통합 관리 목록에서 바로 수정할 수 있습니다.`;
+      renderAll();
+    }
+
+    function renderCompanyHolidayList() {
+      const list = document.getElementById('companyHolidayList');
+      const msg = document.getElementById('holidayMsg');
+      if (!list) return;
+      const rows = companyHolidays
+        .filter(item => item.category === adminDepartmentFilter)
+        .sort((a, b) => a.date.localeCompare(b.date) || (a.id - b.id));
+      list.innerHTML = rows.length ? rows.map(item => `
+        <div class="ops-item" style="margin-bottom:12px;">
+          <div class="meta" style="margin-bottom:8px;">
+            <span class="badge accent">${escapeHtml(categoryLabel[item.category])}</span>
+            <span class="badge">${item.date}</span>
+          </div>
+          <div class="small" style="color:var(--text); margin-bottom:10px;">${escapeHtml(item.reason || '회사 휴일')}</div>
+          <button class="btn outline" type="button" onclick="removeCompanyHoliday(${item.id})">휴일 삭제</button>
+        </div>
+      `).join('') : '<div class="empty">선택한 회사에 등록된 회사 휴일이 없습니다.</div>';
+      if (msg && !rows.length) msg.textContent = '선택한 회사에 등록된 회사 휴일이 없습니다. 날짜와 사유를 입력해 바로 추가할 수 있습니다.';
+    }
+
+    function addCompanyHoliday() {
+      const category = document.getElementById('holiday-category')?.value || adminDepartmentFilter;
+      const date = document.getElementById('holiday-date')?.value || '';
+      const reason = (document.getElementById('holiday-reason')?.value || '').trim() || '회사 휴일';
+      const msg = document.getElementById('holidayMsg');
+      if (!date) {
+        if (msg) msg.textContent = '회사 휴일 날짜를 선택해 주세요.';
+        return;
+      }
+      const exists = companyHolidays.find(item => item.category === category && item.date === date);
+      if (exists) {
+        if (msg) msg.textContent = '해당 회사와 날짜에는 이미 회사 휴일이 등록되어 있습니다.';
+        return;
+      }
+      companyHolidays.push({
+        id: Date.now(),
+        category,
+        date,
+        reason,
+        createdAt: nowText()
+      });
+      save(HOLIDAYS_KEY, companyHolidays);
+      syncBackups();
+      adminDepartmentFilter = category;
+      const reasonInput = document.getElementById('holiday-reason');
+      if (reasonInput) reasonInput.value = '';
+      if (msg) msg.textContent = `${categoryLabel[category]} ${date} 회사 휴일이 등록되었습니다.`;
+      renderAll();
+    }
+
+    function removeCompanyHoliday(id) {
+      const index = companyHolidays.findIndex(item => item.id === id);
+      if (index === -1) return;
+      const removed = companyHolidays[index];
+      companyHolidays.splice(index, 1);
+      save(HOLIDAYS_KEY, companyHolidays);
+      syncBackups();
+      const msg = document.getElementById('holidayMsg');
+      if (msg) msg.textContent = `${categoryLabel[removed.category]} ${removed.date} 회사 휴일을 삭제했습니다.`;
+      renderAll();
+    }
+
+    function saveWorkerOps(userId) {
+      const worker = users.find(u => u.id === userId && u.role === 'worker');
+      if (!worker) return;
+      worker.name = document.getElementById(`account-name-${userId}`).value.trim() || worker.name;
+      worker.email = document.getElementById(`account-email-${userId}`).value.trim().toLowerCase() || worker.email;
+      worker.password = document.getElementById(`account-password-${userId}`).value.trim() || worker.password;
+      worker.category = document.getElementById(`account-category-${userId}`).value || worker.category;
+      worker.isActive = document.getElementById(`account-active-${userId}`).value === 'true';
+      worker.workDays = [1,2,3,4,5].filter(day => document.getElementById(`workday-${userId}-${day}`)?.checked);
+      worker.workStart = document.getElementById(`workstart-${userId}`).value || '';
+      worker.workEnd = document.getElementById(`workend-${userId}`).value || '';
+      worker.annualLeaveTotal = Math.max(0, Number(document.getElementById(`annualleave-total-${userId}`).value || 0));
+      worker.weeklySubmissionTarget = Math.max(0, Number(document.getElementById(`weeklytarget-${userId}`).value || 0));
+      worker.dailySchedules = worker.workDays.reduce((acc, day) => { acc[day] = { day, start: worker.workStart || '', end: worker.workEnd || '' }; return acc; }, {});
+      adminDepartmentFilter = worker.category;
+      save(USERS_KEY, users);
+      syncBackups();
+      document.getElementById('backupMsg').textContent = `${worker.name} 계정과 스케줄이 저장되었습니다.`;
+      renderAll();
+    }
+
+    function markSubmission(id, status) {
+      const sub = submissions.find(s => s.id === id);
+      if (!sub) return;
+      sub.status = status;
+      save(SUBMISSIONS_KEY, submissions);
+      syncBackups();
+      renderAll();
+    }
+    function updateAttendanceRecord(id) {
+      const row = attendance.find(a => a.id === id);
+      if (!row) return;
+      row.date = document.getElementById(`date-${id}`).value || row.date;
+      row.checkIn = document.getElementById(`checkin-${id}`).value || '';
+      row.checkOut = document.getElementById(`checkout-${id}`).value || '';
+      row.status = document.getElementById(`status-${id}`).value || row.status;
+      if (row.status === '연차승인' || row.status === '연차') {
+        row.checkIn = '';
+        row.checkOut = '';
+        row.leaveApprovedAt = row.leaveApprovedAt || nowText();
+        row.leaveApprovedBy = row.leaveApprovedBy || (currentUser()?.name || '관리자');
+      }
+      if (row.status === '연차반려') {
+        row.leaveRejectedAt = nowText();
+      }
+      row.adminSaved = true;
+      row.updatedAt = nowText();
+      save(ATTENDANCE_KEY, attendance);
+      syncBackups();
+      document.getElementById('backupMsg').textContent = '출퇴근·연차 기록 수정사항과 백업이 함께 저장되었습니다.';
+      renderAll();
+    }
+
+    function approveLeaveRequest(id) {
+      const row = attendance.find(a => a.id === id);
+      if (!row) return;
+      const msgEl = document.getElementById('backupMsg');
+      const worker = users.find(u => u.id === row.userId);
+      if (!worker) {
+        if (msgEl) msgEl.textContent = '직원 정보를 찾을 수 없어 연차 승인을 진행할 수 없습니다.';
+        return;
+      }
+      const approvedCount = getAnnualLeaveUsed(worker.id, String(row.date || today()).slice(0, 4));
+      const totalLeave = Number(worker.annualLeaveTotal || 0);
+      if (approvedCount >= totalLeave) {
+        if (msgEl) msgEl.textContent = `${worker.name} 직원은 배정된 연차 ${totalLeave}일을 모두 사용해 추가 승인할 수 없습니다.`;
+        return;
+      }
+      row.status = '연차승인';
+      row.checkIn = '';
+      row.checkOut = '';
+      row.leaveApprovedAt = nowText();
+      row.leaveApprovedBy = currentUser()?.name || '관리자';
+      row.leaveRejectedAt = '';
+      row.adminSaved = true;
+      row.updatedAt = nowText();
+      save(ATTENDANCE_KEY, attendance);
+      syncBackups();
+      if (msgEl) msgEl.textContent = '연차 신청을 승인했고 월별 출퇴근 집계에도 반영했습니다.';
+      renderAll();
+    }
+
+    function rejectLeaveRequest(id) {
+      const row = attendance.find(a => a.id === id);
+      if (!row) return;
+      row.status = '연차반려';
+      row.leaveRejectedAt = nowText();
+      row.leaveApprovedAt = '';
+      row.leaveApprovedBy = '';
+      row.adminSaved = true;
+      row.updatedAt = nowText();
+      save(ATTENDANCE_KEY, attendance);
+      syncBackups();
+      document.getElementById('backupMsg').textContent = '연차 신청을 반려했고 관리 기록을 저장했습니다.';
+      renderAll();
+    }
+    window.changeAdminDepartment = changeAdminDepartment;
+    window.changeAdminAttendanceDepartment = changeAdminAttendanceDepartment;
+    window.changeAdminAttendanceMonth = changeAdminAttendanceMonth;
+    window.changeAdminAttendanceWorker = changeAdminAttendanceWorker;
+    window.changeWorkerAssignmentWeek = changeWorkerAssignmentWeek;
+    window.changeMyPassword = changeMyPassword;
+    window.changeSubmissionManageWeek = changeSubmissionManageWeek;
+    window.changeSubmissionManageDepartment = changeSubmissionManageDepartment;
+    window.changeAssignmentTemplateWeek = changeAssignmentTemplateWeek;
+    window.saveAssignmentTemplate = saveAssignmentTemplate;
+    window.changeWorkerAttendanceMonth = changeWorkerAttendanceMonth;
+    window.addWorkerAccount = addWorkerAccount;
+    window.addCompanyHoliday = addCompanyHoliday;
+    window.removeCompanyHoliday = removeCompanyHoliday;
+    window.saveWorkerOps = saveWorkerOps;
+    window.markSubmission = markSubmission;
+    window.markSubmissionWeek = markSubmissionWeek;
+    window.saveSingleSubmission = saveSingleSubmission;
+    window.updateAttendanceRecord = updateAttendanceRecord;
+    window.requestAnnualLeave = requestAnnualLeave;
+    window.approveLeaveRequest = approveLeaveRequest;
+    window.rejectLeaveRequest = rejectLeaveRequest;
+
+    function boot() {
+      syncBackups();
+      if (session && currentUser()) enterApp();
+    }
+    boot();
+  </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
