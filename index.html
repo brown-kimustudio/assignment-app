@@ -1895,13 +1895,18 @@ async function loadFromSupabase() {
         .filter(s => String(s.userId) === String(userId) && s.submittedDate === today() && s.id !== excludeSubmissionId)
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
-    function countImagesWeek(userId, weekOrExclude = null, maybeExclude = null) {
-      const targetWeek = typeof weekOrExclude === 'string' && weekOrExclude.includes('-W') ? weekOrExclude : weekKey();
-      const excludeSubmissionId = typeof weekOrExclude === 'string' && weekOrExclude.includes('-W') ? maybeExclude : weekOrExclude;
-      return submissions
-        .filter(s => String(s.userId) === String(userId) && s.submittedWeek === targetWeek && s.id !== excludeSubmissionId)
-        .reduce((sum, s) => sum + (s.images?.length || 0), 0);
-    }
+    function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
+  return submissions
+    .filter(s =>
+      String(s.userId) === String(userId) &&
+      String(s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === String(targetWeek) &&
+      String(s.id) !== String(excludeSubmissionId || '')
+    )
+    .reduce((sum, s) => {
+      const images = Array.isArray(s.images) ? s.images : [];
+      return sum + images.length;
+    }, 0);
+}
 
     function showPage(pageId) {
       const user = currentUser();
