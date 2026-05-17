@@ -1913,7 +1913,18 @@ async function loadFromSupabase() {
         return;
       }
 
-      const existing = submissions.find(s => s.assignmentId === assignmentId && s.userId === user.id);
+      const assignment = assignments.find(a => String(a.id) === String(assignmentId));
+
+if (!assignment) {
+  alert('과제를 찾을 수 없습니다.');
+  return;
+}
+
+const existing = submissions.find(s =>
+  String(s.userId) === String(user.id) &&
+  String(s.assignmentTitle) === String(assignment.title) &&
+  String(s.submittedWeek) === String(getAssignmentWeekValue(assignment))
+);
       let payload;
 
 try {
@@ -2564,6 +2575,10 @@ try {
       }
 
       const assignment = assignments.find(a => String(a.id) === String(assignmentId));
+      if (!assignment) {
+  alert('과제를 찾을 수 없습니다.');
+  return;
+}
 
 const existing = submissions.find(s =>
   String(s.userId) === String(user.id) &&
