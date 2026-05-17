@@ -2528,6 +2528,7 @@ try {
       }
     }
     function renderReferenceImages(images = [], variant = 'default') {
+      images = normalizeImages(images);
       if (!images.length) return '<div class="small">예시 이미지가 없습니다.</div>';
       const sizeClass = variant === 'hero' ? ' assignment hero' : (variant === 'large' ? ' assignment large' : ' assignment');
       const caption = variant === 'hero' ? '대시보드 확대 보기 · 클릭 시 원본 열기' : '클릭하여 크게 보기';
