@@ -1960,7 +1960,7 @@ async function loadFromSupabase() {
       const fileInput = document.getElementById('dashboardSubmitFiles');
       if (!select || !fileInput) return;
       const assignmentId = String(select.value || '');
-      const assignment = assignments.find(a => String(a.id) === assignmentId);
+      const assignment = assignments.find(a => String(a.id) === String(assignmentId));
       if (!assignment || assignment.category !== user.category) {
         alert('제출할 이번 주 과제를 먼저 선택해 주세요.');
         return;
