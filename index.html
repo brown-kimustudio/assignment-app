@@ -1083,9 +1083,6 @@ async function loadFromSupabase() {
       referenceImages: item.referenceImages?.length ? item.referenceImages : [{ name: 'common-slides-brief.png', dataUrl: commonSlidesCapture }]
     }));
     save(ASSIGNMENTS_KEY, assignments);
-    let submissions = load(SUBMISSIONS_KEY, []);
-    let attendance = load(ATTENDANCE_KEY, []);
-    let companyHolidays = load(HOLIDAYS_KEY, []);
     const WEEKDAY_ONLY = [1,2,3,4,5];
     users = users.map(user => {
       if (!user || user.role !== 'worker') return user;
