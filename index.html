@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>소속별 이미지 과제 + 운영관리 + 백업 MVP v7</title>
+  
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <style>
     :root {
       --bg: #050505;
@@ -714,6 +719,15 @@
     const BACKUP_ASSIGNMENT_WEEKLY_KEY = 'mvp_backup_assignment_weekly_v9';
     const BACKUP_SUBMISSION_WEEKLY_KEY = 'mvp_backup_submission_weekly_v9';
     const HOLIDAYS_KEY = 'mvp_company_holidays_v20';
+
+    const SUPABASE_URL = 'https://ylxshpuskimbaipscumx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_EAGv5dX3Wf621_5P4_biVg_x4u-KguI';
+    const SUPABASE_STORAGE_BUCKET = 'assignment-images';
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let useSupabase = true;
 
     const categoryLabel = {
       A: '㈜키뮤 + 아이디룩',
@@ -1550,6 +1564,32 @@
       save(BACKUP_ATTENDANCE_MONTHLY_KEY, attendanceBackups);
       save(BACKUP_ASSIGNMENT_WEEKLY_KEY, assignmentBackups);
       save(BACKUP_SUBMISSION_WEEKLY_KEY, submissionBackups);
+          if (useSupabase) syncToSupabase();
+  }
+
+  async function syncToSupabase() {
+    try {
+      for (const user of users) {
+        await supabaseClient.from('users').upsert(user, { onConflict: 'id' });
+      }
+      for (const record of attendance) {
+        await supabaseClient.from('attendance').upsert({
+          ...record,
+          id: `${record.userId}_${record.date}`
+        }, { onConflict: 'id' });
+      }
+      for (const record of assignments) {
+        await supabaseClient.from('assignments').upsert(record, { onConflict: 'id' });
+      }
+      for (const record of submissions) {
+        await supabaseClient.from('submissions').upsert(record, { onConflict: 'id' });
+      }
+      console.log('✅ Supabase 동기화 완료');
+    } catch (error) {
+      console.error('❌ Supabase 동기화 오류:', error);
+    }
+  }
+
     }
     function downloadJson(filename, data) {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
