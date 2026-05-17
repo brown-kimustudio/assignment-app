@@ -1892,7 +1892,9 @@ async function loadFromSupabase() {
     function renderAll() {
       users = load(USERS_KEY, seedUsers);
       assignments = load(ASSIGNMENTS_KEY, seedAssignments);
-      submissions = load(SUBMISSIONS_KEY, []);
+      if (useSupabase) {
+  loadSubmissionsFromSupabase();
+}
       attendance = load(ATTENDANCE_KEY, []);
       backupAll = load(BACKUP_ALL_KEY, {});
       attendanceBackups = load(BACKUP_ATTENDANCE_MONTHLY_KEY, {});
