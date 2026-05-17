@@ -1590,23 +1590,37 @@ async function loadFromSupabase() {
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
     function getWorkerSubmissionForWeek(userId, category, targetWeek) {
-  const assignment = getAssignmentByCategoryAndWeek(category, targetWeek);
+
+  const assignment =
+    getAssignmentByCategoryAndWeek(category, targetWeek);
+
+  if (!assignment) return null;
 
   return submissions.find(s => {
-    const sameUser = String(s.userId) === String(userId);
-    const sameWeek = String(s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === String(targetWeek);
 
-    if (!sameUser || !sameWeek) return false;
+    const sameUser =
+      String(s.userId) === String(userId);
 
-    const sameAssignmentId = assignment
-      ? String(s.assignmentId) === String(assignment.id)
-      : false;
+    const sameWeek =
+      String(
+        s.submittedWeek ||
+        weekKeyFromDateStr(s.submittedAt)
+      ) === String(targetWeek);
 
-    const sameAssignmentTitle = assignment
-      ? String(s.assignmentTitle || '') === String(assignment.title || '')
-      : false;
+    const sameAssignmentId =
+      String(s.assignmentId || '') ===
+      String(assignment.id || '');
 
-    return sameAssignmentId || sameAssignmentTitle;
+    const sameAssignmentTitle =
+      String(s.assignmentTitle || '') ===
+      String(assignment.title || '');
+
+    return (
+      sameUser &&
+      sameWeek &&
+      (sameAssignmentId || sameAssignmentTitle)
+    );
+
   }) || null;
 }
     function getAdminAttendanceMonthOptions(category = adminDepartmentFilter) {
