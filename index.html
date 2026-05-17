@@ -725,6 +725,7 @@
      };
     const { createClient } = supabase;
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+   
     async function uploadImageToStorage(file, folder = 'submissions') {
   const fileExt = file.name.split('.').pop();
   const fileName = `${folder}/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
@@ -748,6 +749,28 @@
   };
 }
 
+    async function uploadAssignmentImageToStorage(file) {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `assignments/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+
+  const { error } = await supabaseClient.storage
+    .from('assignment-images')
+    .upload(fileName, file);
+
+  if (error) {
+    throw error;
+  }
+
+  const { data } = supabaseClient.storage
+    .from('assignment-images')
+    .getPublicUrl(fileName);
+
+  return {
+    name: file.name,
+    path: fileName,
+    url: data.publicUrl
+  };
+}
     let useSupabase = true;
 
 
