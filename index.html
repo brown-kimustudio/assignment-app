@@ -723,30 +723,51 @@
     const { createClient } = supabase;
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
    
-    async function uploadImageToStorage(file, folder = 'submissions') {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${folder}/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
-
-  const { error } = await supabaseClient.storage
-    .from('submission-images')
-    .upload(fileName, file);
-
-  if (error) {
-    throw error;
+async function uploadImageToStorage(file, folder = 'submissions') {
+  // ✅ Supabase가 비활성화된 경우 로컬 DataURL 사용
+  if (!useSupabase) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve({
+          name: file.name,
+          path: `${folder}/${Date.now()}-${file.name}`,
+          url: reader.result  // data:image/... 형태의 로컬 URL
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
-  const { data } = supabaseClient.storage
-    .from('submission-images')
-    .getPublicUrl(fileName);
+  // ✅ Supabase 활성화된 경우 기존 로직 유지
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
 
-  return {
-    name: file.name,
-    path: fileName,
-    url: data.publicUrl
-  };
+    const { error } = await supabaseClient.storage
+      .from('submission-images')
+      .upload(fileName, file);
+
+    if (error) throw error;
+
+    const { data } = supabaseClient.storage
+      .from('submission-images')
+      .getPublicUrl(fileName);
+
+    return {
+      name: file.name,
+      path: fileName,
+      url: data.publicUrl
+    };
+  } catch (error) {
+    console.error('Supabase 이미지 업로드 실패:', error);
+    throw new Error(`이미지 업로드 실패: ${error.message}`);
+  }
 }
 
-    async function uploadAssignmentImageToStorage(file) {
+
+async function uploadAssignmentImageToStorage(file) {
   const fileExt = file.name.split('.').pop();
   const fileName = `assignments/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
 
@@ -885,63 +906,85 @@
       return weekKey(new Date(y, m - 1, d));
     }
 function load(key, fallback) {
-  const raw = localStorage.getItem(key);
-
-  if (!raw) {
-    localStorage.setItem(key, JSON.stringify(fallback));
-    return JSON.parse(JSON.stringify(fallback));
-  }
-
   try {
-    return JSON.parse(raw);
-  } catch (e) {
-    console.warn(`${key} JSON 파싱 실패, 기본값으로 복구합니다.`);
-    localStorage.setItem(key, JSON.stringify(fallback));
-    return JSON.parse(JSON.stringify(fallback));
+    const raw = localStorage.getItem(key);
+    
+    if (!raw) {
+      console.log(`📝 ${key} 초기 데이터 생성`);
+      localStorage.setItem(key, JSON.stringify(fallback));
+      return JSON.parse(JSON.stringify(fallback));
+    }
+
+    const parsed = JSON.parse(raw);
+    console.log(`✅ ${key} 로드 성공:`, Array.isArray(parsed) ? `${parsed.length}개 항목` : '데이터 로드됨');
+    return parsed;
+    
+  } catch (error) {
+    console.warn(`❌ ${key} 로드 실패, 기본값으로 복구:`, error);
+    const safeFallback = JSON.parse(JSON.stringify(fallback));
+    
+    try {
+      localStorage.setItem(key, JSON.stringify(safeFallback));
+    } catch (saveError) {
+      console.error(`❌ ${key} 복구 저장 실패:`, saveError);
+    }
+    
+    return safeFallback;
   }
 }
 
-
 async function save(key, value) {
-  // ✅ 모든 데이터를 localStorage에 백업 저장
+  // ✅ 1. 무조건 localStorage에 먼저 안전 저장
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    console.log(`✅ ${key} 로컬 저장 성공`);
   } catch (error) {
-    console.warn(`${key} localStorage 저장 실패:`, error);
+    console.warn(`❌ ${key} 로컬 저장 실패:`, error);
   }
 
-  if (!useSupabase) return;
-
-  return;
-/*
-  const tableByKey = {
-    [USERS_KEY]: 'users',
-    [ASSIGNMENTS_KEY]: 'assignments',
-    [SUBMISSIONS_KEY]: 'submissions',
-    [ATTENDANCE_KEY]: 'attendance',
-    [HOLIDAYS_KEY]: 'company_holidays'
-  };
-
-  const tableName = tableByKey[key];
-  if (!tableName) return;
-
-  const rows = Array.isArray(value) ? value : [value];
-
-  const { error } = await supabaseClient
-    .from(tableName)
-    .upsert(rows, { onConflict: 'id' });
-
-  if (error) {
-    console.error(`${tableName} 저장 실패:`, error.message);
-    alert(`${tableName} 저장 실패: ${error.message}`);
+  // ✅ 2. Supabase가 꺼져있으면 여기서 종료 (화면 멈춤 방지)
+  if (!useSupabase) {
+    console.log(`⏭️ Supabase 비활성화됨, ${key} 로컬 저장만 완료`);
     return;
   }
 
-  console.log(`${tableName} 저장 완료`);
-*/
+  // ✅ 3. Supabase 저장 (백그라운드 처리, 화면 멈춤 방지)
+  try {
+    const tableByKey = {
+      [USERS_KEY]: 'users',
+      [ASSIGNMENTS_KEY]: 'assignments',
+      [SUBMISSIONS_KEY]: 'submissions',
+      [ATTENDANCE_KEY]: 'attendance',
+      [HOLIDAYS_KEY]: 'company_holidays'
+    };
+
+    const tableName = tableByKey[key];
+    if (!tableName) {
+      console.log(`⏭️ ${key}는 Supabase 테이블 없음, 로컬만 저장`);
+      return;
+    }
+
+    const rows = Array.isArray(value) ? value : [value];
+    
+    // ✅ 백그라운드 전송 (await 제거로 화면 멈춤 방지)
+    supabaseClient.from(tableName).upsert(rows, { onConflict: 'id' })
+      .then(({ error }) => {
+        if (error) {
+          console.warn(`⚠️ [${tableName}] Supabase 저장 실패:`, error.message);
+        } else {
+          console.log(`✅ [${tableName}] Supabase 저장 성공`);
+        }
+      })
+      .catch(err => {
+        console.error(`❌ [${tableName}] Supabase 연결 오류:`, err);
+      });
+      
+  } catch (error) {
+    console.error('❌ Supabase 전송 중 예외:', error);
+  }
 }
 
-    async function loadSubmissionsFromSupabase() {
+async function loadSubmissionsFromSupabase() {
 
   if (!useSupabase) return;
 
