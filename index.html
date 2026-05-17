@@ -1896,12 +1896,16 @@ async function loadFromSupabase() {
       const payload = images.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
 
       if (existing) {
-        existing.images = payload;
-        existing.submittedAt = nowText();
-        existing.submittedDate = today();
-        existing.submittedWeek = getAssignmentWeekValue(assignment);
-        existing.status = '제출완료';
-      } else {
+  existing.images = [
+    ...(existing.images || []),
+    ...payload
+  ];
+  existing.submittedAt = nowText();
+  existing.submittedDate = today();
+  existing.submittedWeek = getAssignmentWeekValue(assignment);
+  existing.status = '제출완료';
+}
+      else {
         submissions.unshift({
           id: Date.now(),
           assignmentId,
@@ -2538,12 +2542,16 @@ async function loadFromSupabase() {
       const payload = images.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
 
       if (existing) {
-        existing.images = payload;
-        existing.submittedAt = nowText();
-        existing.submittedDate = today();
-        existing.submittedWeek = getAssignmentWeekValue(assignment);
-        existing.status = '제출완료';
-      } else {
+  existing.images = [
+    ...(existing.images || []),
+    ...payload
+  ];
+  existing.submittedAt = nowText();
+  existing.submittedDate = today();
+  existing.submittedWeek = getAssignmentWeekValue(assignment);
+  existing.status = '제출완료';
+}
+      else {
         submissions.unshift({
           id: Date.now(),
           assignmentId,
