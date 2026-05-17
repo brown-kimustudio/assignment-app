@@ -1589,6 +1589,40 @@ async function loadFromSupabase() {
         .filter(s => String(s.userId) === String(userId) && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === targetWeek)
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
+    function findSubmissionForAssignment(userId, assignment) {
+
+  if (!assignment) return null;
+
+  return submissions.find(s => {
+
+    const sameUser =
+      String(s.userId) === String(userId);
+
+    const sameWeek =
+      String(
+        s.submittedWeek ||
+        weekKeyFromDateStr(s.submittedAt)
+      ) === String(
+        getAssignmentWeekValue(assignment)
+      );
+
+    const sameId =
+      String(s.assignmentId || '') ===
+      String(assignment.id || '');
+
+    const sameTitle =
+      String(s.assignmentTitle || '') ===
+      String(assignment.title || '');
+
+    return (
+      sameUser &&
+      sameWeek &&
+      (sameId || sameTitle)
+    );
+
+  }) || null;
+}
+    
     function getWorkerSubmissionForWeek(userId, category, targetWeek) {
 
   const assignment =
@@ -1607,18 +1641,18 @@ async function loadFromSupabase() {
         weekKeyFromDateStr(s.submittedAt)
       ) === String(targetWeek);
 
-    const sameAssignmentId =
+    const sameId =
       String(s.assignmentId || '') ===
       String(assignment.id || '');
 
-    const sameAssignmentTitle =
+    const sameTitle =
       String(s.assignmentTitle || '') ===
       String(assignment.title || '');
 
     return (
       sameUser &&
       sameWeek &&
-      (sameAssignmentId || sameAssignmentTitle)
+      (sameId || sameTitle)
     );
 
   }) || null;
@@ -1890,25 +1924,26 @@ async function loadFromSupabase() {
     }
 
     function renderAll() {
-      users = load(USERS_KEY, seedUsers);
-      assignments = load(ASSIGNMENTS_KEY, seedAssignments);
-      if (useSupabase) {
-  loadSubmissionsFromSupabase();
+  users = load(USERS_KEY, seedUsers);
+  assignments = load(ASSIGNMENTS_KEY, seedAssignments);
+
+  // submissions는 여기서 다시 load하지 않음
+
+  attendance = load(ATTENDANCE_KEY, []);
+  backupAll = load(BACKUP_ALL_KEY, {});
+  attendanceBackups = load(BACKUP_ATTENDANCE_MONTHLY_KEY, {});
+  assignmentBackups = load(BACKUP_ASSIGNMENT_WEEKLY_KEY, {});
+  submissionBackups = load(BACKUP_SUBMISSION_WEEKLY_KEY, {});
+
+  renderSidebar();
+  renderDashboard();
+  renderWorkerAssignmentsPage();
+  renderWorkerAccountPage();
+  renderAssignments();
+  renderAttendance();
+  renderAdmin();
+  renderSubmissionManager();
 }
-      attendance = load(ATTENDANCE_KEY, []);
-      backupAll = load(BACKUP_ALL_KEY, {});
-      attendanceBackups = load(BACKUP_ATTENDANCE_MONTHLY_KEY, {});
-      assignmentBackups = load(BACKUP_ASSIGNMENT_WEEKLY_KEY, {});
-      submissionBackups = load(BACKUP_SUBMISSION_WEEKLY_KEY, {});
-      renderSidebar();
-      renderDashboard();
-      renderWorkerAssignmentsPage();
-      renderWorkerAccountPage();
-      renderAssignments();
-      renderAttendance();
-      renderAdmin();
-      renderSubmissionManager();
-    }
 
     function renderSidebar() {
       const user = currentUser();
@@ -2510,7 +2545,7 @@ try {
       const items = assignmentList || workerAssignments(user);
       if (!items.length) return emptyText ? `<div class="empty">${emptyText}</div>` : '';
       return items.map(a => {
-        const sub = submissions.find(s => s.assignmentId === a.id && s.userId === user.id);
+        const sub = findSubmissionForAssignment(user.id, a);
         const keywords = getAssignmentKeywords(a);
         const thumbHtml = sub?.images?.length ? `
           <div class="thumbs">
