@@ -278,6 +278,8 @@
       .btn.big { width: 100%; }
     }
   </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </head>
 <body>
   <div id="authView" class="wrap auth">
@@ -704,6 +706,13 @@
   </div>
 
   <script>
+    const SUPABASE_URL = 'https://ylxshpuskimbaipscumx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_EAGv5dX3Wf621_5P4_biVg_x4u-KguI';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let useSupabase = false;
+
+
     const USERS_KEY = 'mvp_users_v9';
     const ASSIGNMENTS_KEY = 'mvp_assignments_v9';
     const SUBMISSIONS_KEY = 'mvp_submissions_v9';
@@ -1550,6 +1559,25 @@
       save(BACKUP_ATTENDANCE_MONTHLY_KEY, attendanceBackups);
       save(BACKUP_ASSIGNMENT_WEEKLY_KEY, assignmentBackups);
       save(BACKUP_SUBMISSION_WEEKLY_KEY, submissionBackups);
+          if (useSupabase) syncToSupabase();
+    }
+
+    async function syncToSupabase() {
+      try {
+        for (const user of users) {
+          await supabaseClient.from('users').upsert(user, { onConflict: 'id' });
+        }
+        for (const record of attendance) {
+          await supabaseClient.from('attendance').upsert({
+            ...record,
+            id: `${record.userId}_${record.date}`
+          }, { onConflict: 'id' });
+        }
+        console.log('✅ Supabase 동기화 완료');
+      } catch (error) {
+        console.error('❌ Supabase 동기화 오류:', error);
+      }
+
     }
     function downloadJson(filename, data) {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
