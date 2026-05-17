@@ -3116,27 +3116,24 @@ async function loadFromSupabase() {
         const rawImages = await Promise.all(files.map(readFileAsDataUrl));
         referenceImages = rawImages.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
       }
-      if (existing) {
-        existing.title = title;
-        existing.description = description;
-        existing.dueDate = dueDate;
-        existing.createdWeek = targetWeek;
-        existing.createdBy = user.id;
-        existing.updatedAt = nowText();
-        existing.referenceImages = referenceImages;
-      } else {
-        assignments.unshift({
-          id: crypto.randomUUID(),
-          title,
-          description,
-          dueDate,
-          category,
-          createdAt: nowText(),
-          createdWeek: targetWeek,
-          createdBy: user.id,
-          referenceImages
-        });
-      }
+     const updatedAssignment = {
+  id: existing?.id || crypto.randomUUID(),
+  title,
+  description,
+  dueDate,
+  category,
+  createdAt: existing?.createdAt || nowText(),
+  createdWeek: targetWeek,
+  createdBy: user.id,
+  updatedAt: nowText(),
+  referenceImages
+};
+
+assignments = assignments.filter(a =>
+  !(a.category === category && getAssignmentWeekValue(a) === targetWeek)
+);
+
+assignments.unshift(updatedAssignment);
       save(ASSIGNMENTS_KEY, assignments);
       syncBackups();
       document.getElementById('assignmentMsg').textContent = `${categoryLabel[category]} · ${getSubmissionWeekLabel(targetWeek)} 과제를 저장했어.`;
