@@ -3116,10 +3116,12 @@ async function loadFromSupabase() {
         document.getElementById('assignmentMsg').textContent = `${categoryLabel[category]} 예시 이미지는 최대 12장까지 가능해.`;
         return;
       }
-      const duplicates = assignments.filter(a => a.category === category && getAssignmentWeekValue(a) === targetWeek).sort((a, b) => b.id - a.id);
-      const existing = duplicates[0] || null;
-      assignments = assignments.filter(a => !(a.category === category && getAssignmentWeekValue(a) === targetWeek && (!existing || a.id !== existing.id)));
-      let referenceImages = existing?.referenceImages || [];
+      const existing = assignments.find(a =>
+  String(a.category) === String(category) &&
+  String(getAssignmentWeekValue(a)) === String(targetWeek)
+);
+
+let referenceImages = existing?.referenceImages || [];
      if (files.length) {
   const rawImages = await Promise.all(files.map(readFileAsDataUrl));
   const newImages = rawImages.map((dataUrl, index) => ({
