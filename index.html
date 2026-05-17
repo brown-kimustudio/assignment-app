@@ -2563,13 +2563,27 @@ try {
         return;
       }
 
-      const existing = submissions.find(s => s.assignmentId === assignmentId && s.userId === user.id);
+      const assignment = assignments.find(a => String(a.id) === String(assignmentId));
+
+const existing = submissions.find(s =>
+  String(s.userId) === String(user.id) &&
+  String(s.assignmentTitle) === String(assignment.title) &&
+  String(s.submittedWeek) === String(getAssignmentWeekValue(assignment))
+);
       const todayUsed = countImagesToday(user.id, existing?.id || null);
       const weekUsed = countImagesWeek(user.id, existing?.id || null);
 
-      const images = await Promise.all(files.map(readFileAsDataUrl));
-      const payload = images.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
+      let payload;
 
+      try {
+      payload = await Promise.all(
+      files.map(file => uploadImageToStorage(file, 'submissions'))
+  );
+} 
+  catch (error) {
+  alert('이미지 업로드 실패: ' + error.message);
+  return;
+}
       if (existing) {
   existing.images = [
     ...(existing.images || []),
