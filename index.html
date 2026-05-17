@@ -725,6 +725,28 @@
      };
     const { createClient } = supabase;
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    async function uploadImageToStorage(file, folder = 'submissions') {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${folder}/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+
+  const { error } = await supabaseClient.storage
+    .from('submission-images')
+    .upload(fileName, file);
+
+  if (error) {
+    throw error;
+  }
+
+  const { data } = supabaseClient.storage
+    .from('submission-images')
+    .getPublicUrl(fileName);
+
+  return {
+    name: file.name,
+    path: fileName,
+    url: data.publicUrl
+  };
+}
 
     let useSupabase = true;
 
@@ -1892,8 +1914,16 @@ async function loadFromSupabase() {
       }
 
       const existing = submissions.find(s => s.assignmentId === assignmentId && s.userId === user.id);
-      const images = await Promise.all(files.map(readFileAsDataUrl));
-      const payload = images.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
+      let payload;
+
+try {
+  payload = await Promise.all(
+    files.map(file => uploadImageToStorage(file, 'submissions'))
+  );
+} catch (error) {
+  alert('이미지 업로드 실패: ' + error.message);
+  return;
+}
 
       if (existing) {
   existing.images = [
@@ -2313,14 +2343,13 @@ async function loadFromSupabase() {
       const sizeClass = variant === 'hero' ? ' assignment hero' : (variant === 'large' ? ' assignment large' : ' assignment');
       const caption = variant === 'hero' ? '대시보드 확대 보기 · 클릭 시 원본 열기' : '클릭하여 크게 보기';
       return `<div class="thumbs">${images.map(img => `
-        <div class="thumb-wrap">
-          <a class="thumb-link" href="${img.dataUrl}" target="_blank" rel="noopener noreferrer" title="원본 크게 보기">
-            <img class="thumb${sizeClass}" src="${img.dataUrl}" alt="${escapeHtml(img.name)}">
-          </a>
-          <div class="thumb-caption">${escapeHtml(img.name)} · ${caption}</div>
-        </div>
-      `).join('')}</div>`;
-    }
+  <div class="thumb-wrap">
+    <a class="thumb-link" href="${img.url || img.dataUrl}" target="_blank" rel="noopener noreferrer" title="원본 크게 보기">
+      <img class="thumb${sizeClass}" src="${img.url || img.dataUrl}" alt="${escapeHtml(img.name)}">
+    </a>
+    <div class="thumb-caption">${escapeHtml(img.name)} · ${caption}</div>
+  </div>
+`).join('')}</div>`;
 
     function getAssignmentWeekLabel(assignment) {
       const wk = assignment?.createdWeek || weekKeyFromDateStr(assignment?.createdAt || today());
