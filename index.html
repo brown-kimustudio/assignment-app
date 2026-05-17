@@ -3120,10 +3120,18 @@ async function loadFromSupabase() {
       const existing = duplicates[0] || null;
       assignments = assignments.filter(a => !(a.category === category && getAssignmentWeekValue(a) === targetWeek && (!existing || a.id !== existing.id)));
       let referenceImages = existing?.referenceImages || [];
-      if (files.length) {
-        const rawImages = await Promise.all(files.map(readFileAsDataUrl));
-        referenceImages = rawImages.map((dataUrl, index) => ({ name: files[index].name, dataUrl }));
-      }
+     if (files.length) {
+  const rawImages = await Promise.all(files.map(readFileAsDataUrl));
+  const newImages = rawImages.map((dataUrl, index) => ({
+    name: files[index].name,
+    dataUrl
+  }));
+
+  referenceImages = [
+    ...(existing?.referenceImages || []),
+    ...newImages
+  ];
+}
      const updatedAssignment = {
   id: existing?.id || crypto.randomUUID(),
   title,
