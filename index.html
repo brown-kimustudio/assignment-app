@@ -865,15 +865,27 @@
       return weekKey(new Date(y, m - 1, d));
     }
     function load(key, fallback) {
-      const raw = localStorage.getItem(key);
-      if (!raw) {
-        localStorage.setItem(key, JSON.stringify(fallback));
-        return JSON.parse(JSON.stringify(fallback));
-      }
-      return JSON.parse(raw);
-    }
+  if (key === SUBMISSIONS_KEY) {
+    return JSON.parse(JSON.stringify(fallback));
+  }
+
+  const raw = localStorage.getItem(key);
+
+  if (!raw) {
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return JSON.parse(JSON.stringify(fallback));
+  }
+
+  return JSON.parse(raw);
+}
     async function save(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  if (key !== SUBMISSIONS_KEY) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.warn(`${key} localStorage 저장 실패:`, error);
+    }
+  }
 
   if (!useSupabase) return;
 
@@ -901,6 +913,23 @@
   }
 
   console.log(`${tableName} 저장 완료`);
+}
+    async function loadSubmissionsFromSupabase() {
+
+  if (!useSupabase) return;
+
+  const { data, error } = await supabaseClient
+    .from('submissions')
+    .select('*');
+
+  if (error) {
+    console.error('submissions 불러오기 실패:', error);
+    return;
+  }
+
+  submissions = data || [];
+
+  renderAll();
 }
     function loadSession() {
       const raw = localStorage.getItem(SESSION_KEY);
@@ -987,6 +1016,7 @@
     let users = load(USERS_KEY, seedUsers);
     let assignments = load(ASSIGNMENTS_KEY, seedAssignments);
     let submissions = load(SUBMISSIONS_KEY, []);
+    loadSubmissionsFromSupabase();
     let attendance = load(ATTENDANCE_KEY, []);
     let companyHolidays = load(HOLIDAYS_KEY, []);
 
