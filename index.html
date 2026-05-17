@@ -1895,6 +1895,54 @@ async function loadFromSupabase() {
         .filter(s => String(s.userId) === String(userId) && s.submittedDate === today() && s.id !== excludeSubmissionId)
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
+    function normalizeImages(images) {
+
+  if (Array.isArray(images)) return images;
+
+  if (typeof images === 'string') {
+
+    try {
+
+      const parsed = JSON.parse(images);
+
+      return Array.isArray(parsed)
+        ? parsed
+        : [];
+
+    } catch {
+
+      return [];
+
+    }
+  }
+
+  return [];
+}
+
+
+
+function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
+
+  return submissions
+    .filter(s =>
+
+      String(s.userId) === String(userId) &&
+
+      String(
+        s.submittedWeek ||
+        weekKeyFromDateStr(s.submittedAt)
+      ) === String(targetWeek) &&
+
+      String(s.id) !== String(excludeSubmissionId || '')
+
+    )
+
+    .reduce((sum, s) => {
+
+      return sum + normalizeImages(s.images).length;
+
+    }, 0);
+}
     function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
   return submissions
     .filter(s =>
@@ -2592,7 +2640,7 @@ try {
             ` : `
               <div class="msg" style="margin-top:14px;">이미지 파일 선택과 제출 버튼은 상단 출퇴근 · 연차 영역 옆으로 이동했습니다.</div>
             `}
-            ${sub ? `<div class="keyword-box"><h5>내 마지막 제출</h5><div class="small">마지막 제출 ${sub.submittedAt} · ${sub.images.length}장</div>${thumbHtml}</div>` : ''}
+            ${sub ? `<div class="keyword-box"><h5>내 마지막 제출</h5><div class="small">마지막 제출 ${sub.submittedAt} · ${normalizeImages(sub.images).length}장</div>${thumbHtml}</div>` : ''}
           </div>
         `;
       }).join('');
