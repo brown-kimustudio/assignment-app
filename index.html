@@ -3015,7 +3015,7 @@ const existing = submissions.find(s =>
     function getImageExtension(img) {
       const fileName = String(img?.name || '');
       if (fileName.includes('.')) return fileName.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
-      const dataUrl = String(img?.dataUrl || '');
+      const dataUrl = String(img?.url || img?.dataUrl || '');
       if (dataUrl.startsWith('data:image/jpeg')) return 'jpg';
       if (dataUrl.startsWith('data:image/png')) return 'png';
       if (dataUrl.startsWith('data:image/webp')) return 'webp';
@@ -3051,7 +3051,7 @@ const existing = submissions.find(s =>
       let count = 0;
       rows.forEach(sub => {
         (sub.images || []).forEach((img, index) => {
-          triggerImageDownload(img.dataUrl, buildSubmissionDownloadName(week, sub, img, index), count * 180);
+          triggerImageDownload(img.url || img.dataUrl, buildSubmissionDownloadName(week, sub, img, index), count * 180);
           count += 1;
         });
       });
