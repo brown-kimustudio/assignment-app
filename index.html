@@ -2606,11 +2606,6 @@ try {
         return;
       }
 
-      const assignment = assignments.find(a => String(a.id) === String(assignmentId));
-      if (!assignment) {
-  alert('과제를 찾을 수 없습니다.');
-  return;
-}
 
 const existing = submissions.find(s =>
   String(s.userId) === String(user.id) &&
@@ -2642,19 +2637,22 @@ const existing = submissions.find(s =>
   existing.status = '제출완료';
 }
       else {
-        submissions.unshift({
-          id: Date.now(),
-          assignmentId,
-          userId: user.id,
-          images: payload,
-          submittedAt: nowText(),
-          submittedDate: today(),
-          submittedWeek: getAssignmentWeekValue(assignment),
-          status: '제출완료'
-        });
-      }
+  submissions.unshift({
+    id: crypto.randomUUID(),
+    assignmentId,
+    assignmentTitle: assignment.title,
+    submittedWeek: getAssignmentWeekValue(assignment),
+    userId: user.id,
+    workerName: user.name,
+    workerCategory: user.category,
+    images: payload,
+    submittedAt: nowText(),
+    submittedDate: today(),
+    status: '제출완료'
+  });
+}
       save(SUBMISSIONS_KEY, submissions);
-      syncBackups();
+      //syncBackups();
       renderAll();
     }
     window.submitAssignmentImages = submitAssignmentImages;
