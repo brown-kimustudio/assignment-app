@@ -1943,18 +1943,6 @@ function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
 
     }, 0);
 }
-    function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
-  return submissions
-    .filter(s =>
-      String(s.userId) === String(userId) &&
-      String(s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === String(targetWeek) &&
-      String(s.id) !== String(excludeSubmissionId || '')
-    )
-    .reduce((sum, s) => {
-      const images = Array.isArray(s.images) ? s.images : [];
-      return sum + images.length;
-    }, 0);
-}
 
     function showPage(pageId) {
       const user = currentUser();
@@ -2022,126 +2010,112 @@ function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
     }
 
     function renderDashboardSubmissionControls(user, weeklyAssignments = []) {
-      const uploadArea = document.getElementById('attendanceUploadArea');
-      const select = document.getElementById('dashboardAssignmentSelect');
-      const fileInput = document.getElementById('dashboardSubmitFiles');
-      const submitBtn = document.getElementById('dashboardSubmitBtn');
-      const guide = document.getElementById('dashboardSubmitGuide');
-      if (!uploadArea || !select || !fileInput || !submitBtn || !guide) return;
+  // ... 기존 코드 ...
 
-      if (!weeklyAssignments.length) {
-        uploadArea.classList.remove('hidden');
-        select.innerHTML = '<option value="">이번 주 과제 없음</option>';
-        select.disabled = true;
-        fileInput.disabled = true;
-        submitBtn.disabled = true;
-        submitBtn.style.opacity = '0.45';
-        guide.textContent = '이번 주 등록된 과제가 없어 이미지 제출이 비활성화됩니다.';
-        return;
-      }
+  const selected = weeklyAssignments.find(a => String(a.id) === String(select.value)) || weeklyAssignments[0];
+  if (selected) select.value = String(selected.id);
+  
+  const selectedWeek = selected ? getAssignmentWeekValue(selected) : getActiveAssignmentWeekForUser(user);
+  const existing = selected ? submissions.find(s =>
+    String(s.userId) === String(user.id) &&
+    String(s.assignmentTitle || '') === String(selected.title || '') &&
+    String(s.submittedWeek || '') === String(getAssignmentWeekValue(selected))
+  ) : null;
+  
+  // ⭐ 변경: existing이 있을 때만 그 제출건의 이미지 수를 계산
+  const existingImageCount = existing ? (existing.images?.length || 0) : 0;
+  const weeklyTarget = getWorkerWeeklyTarget(user, selectedWeek);
+  
+  // ⭐ 변경: 같은 과제의 다른 제출건만 세기 (existing 제외)
+  const otherSubmitted = submissions
+    .filter(s =>
+      String(s.userId) === String(user.id) &&
+      String(s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === String(selectedWeek) &&
+      String(s.assignmentTitle || '') === String(selected?.title || '') &&
+      s.id !== existing?.id  // 현재 제출건 제외
+    )
+    .reduce((sum, s) => sum + (s.images?.length || 0), 0);
 
-      uploadArea.classList.remove('hidden');
-      const currentValue = select.value;
-      select.innerHTML = weeklyAssignments.map(a => `<option value="${a.id}">${escapeHtml(a.title)}</option>`).join('');
-      if (weeklyAssignments.some(a => String(a.id) === String(currentValue))) {
-        select.value = currentValue;
-      }
-      select.disabled = false;
-      const selected = weeklyAssignments.find(a => String(a.id) === String(select.value)) || weeklyAssignments[0];
-      if (selected) select.value = String(selected.id);
-      const selectedWeek = selected ? getAssignmentWeekValue(selected) : getActiveAssignmentWeekForUser(user);
-      const existing = selected ? submissions.find(s =>
-        String(s.userId) === String(user.id) &&
-        String(s.assignmentTitle || '') === String(selected.title || '') &&
-        String(s.submittedWeek || '') === String(getAssignmentWeekValue(selected))
-      ) : null;
-      const weeklyTarget = getWorkerWeeklyTarget(user, selectedWeek);
-      const otherSubmitted = countImagesWeek(user.id, selectedWeek, existing?.id || null);
-      fileInput.disabled = false;
-      submitBtn.disabled = false;
-      submitBtn.style.opacity = '1';
-      submitBtn.textContent = existing ? '이미지 추가 제출' : '이미지 제출';
-      guide.textContent = selected
-        ? `${selected.title} · ${getSubmissionWeekLabel(selectedWeek)} 개인 기준 ${weeklyTarget}장 / 다른 제출 ${otherSubmitted}장 / 파일 선택 후 바로 제출`
-        : '현재 노출 과제를 선택한 뒤 이미지를 제출해 주세요.';
-      select.onchange = () => renderDashboardSubmissionControls(user, weeklyAssignments);
-    }
+  fileInput.disabled = false;
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = '1';
+  submitBtn.textContent = existing ? '이미지 추가 제출' : '이미지 제출';
+  guide.textContent = selected
+    ? `${selected.title} · ${getSubmissionWeekLabel(selectedWeek)} 개인 기준 ${weeklyTarget}장 / 이미 제출 ${existingImageCount}장 / 다른 제출 ${otherSubmitted}장 / 파일 선택 후 바로 제출`
+    : '현재 노출 과제를 선택한 뒤 이미지를 제출해 주세요.';
+  select.onchange = () => renderDashboardSubmissionControls(user, weeklyAssignments);
+}
+
 
     async function submitDashboardImages() {
-      const user = currentUser();
-      if (!user || user.role !== 'worker') return;
-      const select = document.getElementById('dashboardAssignmentSelect');
-      const fileInput = document.getElementById('dashboardSubmitFiles');
-      if (!select || !fileInput) return;
-      const assignmentId = String(select.value || '');
-      const assignment = assignments.find(a => String(a.id) === String(assignmentId));
-      if (!assignment || assignment.category !== user.category) {
-        alert('제출할 이번 주 과제를 먼저 선택해 주세요.');
-        return;
-      }
-      const files = Array.from(fileInput.files || []);
-      if (!files.length) {
-        alert('이미지 파일을 선택해 주세요.');
-        return;
-      }
-      if (files.length > 12) {
-        alert('한 번에 최대 12장까지만 제출할 수 있어요.');
-        return;
-      }
+  const user = currentUser();
+  if (!user || user.role !== 'worker') return;
+  const select = document.getElementById('dashboardAssignmentSelect');
+  const fileInput = document.getElementById('dashboardSubmitFiles');
+  if (!select || !fileInput) return;
+  
+  const assignmentId = String(select.value || '');
+  const assignment = assignments.find(a => String(a.id) === String(assignmentId));
+  if (!assignment || assignment.category !== user.category) {
+    alert('제출할 이번 주 과제를 먼저 선택해 주세요.');
+    return;
+  }
+  
+  const files = Array.from(fileInput.files || []);
+  if (!files.length) {
+    alert('이미지 파일을 선택해 주세요.');
+    return;
+  }
+  
+  if (files.length > 12) {
+    alert('한 번에 최대 12장까지만 제출할 수 있어요.');
+    return;
+  }
 
-
-if (!assignment) {
-  alert('과제를 찾을 수 없습니다.');
-  return;
-}
-
-const existing = submissions.find(s =>
-  String(s.userId) === String(user.id) &&
-  String(s.assignmentTitle) === String(assignment.title) &&
-  String(s.submittedWeek) === String(getAssignmentWeekValue(assignment))
-);
-      let payload;
-
-try {
-  payload = await Promise.all(
-    files.map(file => uploadImageToStorage(file, 'submissions'))
+  const existing = submissions.find(s =>
+    String(s.userId) === String(user.id) &&
+    String(s.assignmentTitle) === String(assignment.title) &&
+    String(s.submittedWeek) === String(getAssignmentWeekValue(assignment))
   );
-} catch (error) {
-  alert('이미지 업로드 실패: ' + error.message);
-  return;
+
+  let payload;
+  try {
+    payload = await Promise.all(
+      files.map(file => uploadImageToStorage(file, 'submissions'))
+    );
+  } catch (error) {
+    alert('이미지 업로드 실패: ' + error.message);
+    return;
+  }
+
+  // ⭐ 수정: existing이 있으면 추가, 없으면 새로 생성
+  if (existing) {
+    existing.images = [...(existing.images || []), ...payload];
+    existing.submittedAt = nowText();
+    existing.submittedDate = today();
+    existing.status = '제출완료';
+  } else {
+    submissions.unshift({
+      id: crypto.randomUUID(),
+      assignmentId,
+      assignmentTitle: assignment.title,
+      submittedWeek: getAssignmentWeekValue(assignment),
+      userId: user.id,
+      workerName: user.name,
+      workerCategory: user.category,
+      images: payload,
+      submittedAt: nowText(),
+      submittedDate: today(),
+      status: '제출완료'
+    });
+  }
+
+  await save(SUBMISSIONS_KEY, submissions);
+  fileInput.value = '';
+  syncAttendanceMessage(`${assignment.title} 이미지 ${payload.length}장이 제출되었습니다.`);
+  renderAll();
 }
 
-      if (existing) {
-  existing.images = [
-    ...(existing.images || []),
-    ...payload
-  ];
-  existing.submittedAt = nowText();
-  existing.submittedDate = today();
-  existing.submittedWeek = getAssignmentWeekValue(assignment);
-  existing.status = '제출완료';
-}
-     else {
-  submissions.unshift({
-    id: crypto.randomUUID(),
-    assignmentId,
-    assignmentTitle: assignment.title,
-    submittedWeek: getAssignmentWeekValue(assignment),
-    userId: user.id,
-    workerName: user.name,
-    workerCategory: user.category,
-    images: payload,
-    submittedAt: nowText(),
-    submittedDate: today(),
-    status: '제출완료'
-  });
-}
-      await save(SUBMISSIONS_KEY, submissions);
-      //syncBackups();
-      fileInput.value = '';
-      syncAttendanceMessage(`${assignment.title} 이미지 ${payload.length}장이 제출되었습니다.`);
-      renderAll();
-    }
 
     function addDays(dateStr, days) {
       const [y, m, d] = String(dateStr || today()).split('-').map(Number);
