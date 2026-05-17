@@ -1039,9 +1039,9 @@
     let users = load(USERS_KEY, seedUsers);
     let assignments = load(ASSIGNMENTS_KEY, seedAssignments);
     let submissions = load(SUBMISSIONS_KEY, []);
-    loadSubmissionsFromSupabase();
     let attendance = load(ATTENDANCE_KEY, []);
     let companyHolidays = load(HOLIDAYS_KEY, []);
+    loadSubmissionsFromSupabase();
 
 async function loadFromSupabase() {
   try {
@@ -1304,7 +1304,7 @@ async function loadFromSupabase() {
     const images = submission.images || submission.files || [];
 
     images.forEach((img, index) => {
-      const imageUrl = img.dataUrl || img.url || img;
+      const imageUrl = img.url || img.dataUrl || img;
 
       if (!imageUrl) return;
 
@@ -1586,13 +1586,18 @@ async function loadFromSupabase() {
     }
     function countSubmissionImagesForWeek(userId, targetWeek) {
       return submissions
-        .filter(s => s.userId === userId && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === targetWeek)
+        .filter(s => String(s.userId) === String(userId) && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === targetWeek)
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
     function getWorkerSubmissionForWeek(userId, category, targetWeek) {
       const assignment = getAssignmentByCategoryAndWeek(category, targetWeek);
       if (!assignment) return null;
-      return submissions.find(s => s.userId === userId && s.assignmentId === assignment.id && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === targetWeek) || null;
+      return submissions.find(s => {
+        const sameUser = String(s.userId) === String(userId);
+        const sameWeek = String(s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === String(targetWeek);
+        const sameAssignment = String(s.assignmentId) === String(assignment.id) || String(s.assignmentTitle || '') === String(assignment.title || '');
+        return sameUser && sameWeek && sameAssignment;
+      }) || null;
     }
     function getAdminAttendanceMonthOptions(category = adminDepartmentFilter) {
       const values = new Set([today().slice(0, 7)]);
@@ -1829,14 +1834,14 @@ async function loadFromSupabase() {
     }
     function countImagesToday(userId, excludeSubmissionId = null) {
       return submissions
-        .filter(s => s.userId === userId && s.submittedDate === today() && s.id !== excludeSubmissionId)
+        .filter(s => String(s.userId) === String(userId) && s.submittedDate === today() && s.id !== excludeSubmissionId)
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
     function countImagesWeek(userId, weekOrExclude = null, maybeExclude = null) {
       const targetWeek = typeof weekOrExclude === 'string' && weekOrExclude.includes('-W') ? weekOrExclude : weekKey();
       const excludeSubmissionId = typeof weekOrExclude === 'string' && weekOrExclude.includes('-W') ? maybeExclude : weekOrExclude;
       return submissions
-        .filter(s => s.userId === userId && s.submittedWeek === targetWeek && s.id !== excludeSubmissionId)
+        .filter(s => String(s.userId) === String(userId) && s.submittedWeek === targetWeek && s.id !== excludeSubmissionId)
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
 
@@ -2017,7 +2022,7 @@ try {
     status: '제출완료'
   });
 }
-      save(SUBMISSIONS_KEY, submissions);
+      await save(SUBMISSIONS_KEY, submissions);
       //syncBackups();
       fileInput.value = '';
       syncAttendanceMessage(`${assignment.title} 이미지 ${payload.length}장이 제출되었습니다.`);
@@ -2679,8 +2684,9 @@ const existing = submissions.find(s =>
     status: '제출완료'
   });
 }
-      save(SUBMISSIONS_KEY, submissions);
+      await save(SUBMISSIONS_KEY, submissions);
       //syncBackups();
+      input.value = '';
       renderAll();
     }
     window.submitAssignmentImages = submitAssignmentImages;
