@@ -664,14 +664,11 @@
 
         <div class="card" style="margin-top:16px;">
           <h3 style="margin-top:0;">백업 센터</h3>
-          <div class="card" style="margin-top:16px;">
-  <h3 style="margin-top:0;">백업 센터</h3>
-
-  <div class="btn-row" style="margin-bottom:16px;">
-    <button class="btn accent" type="button" onclick="uploadLocalDataToSupabase()">
-      DB로 현재 데이터 업로드
-    </button>
-  </div>
+          <div class="btn-row" style="margin-bottom:16px;">
+           <button class="btn accent" type="button" onclick="uploadLocalDataToSupabase()">
+            DB로 현재 데이터 업로드
+           </button>
+         </div>
           <div class="grid-2">
             <div class="list-item">
               <h4>전체 데이터 백업</h4>
@@ -887,11 +884,7 @@
       if (!y || !m || !d) return weekKey();
       return weekKey(new Date(y, m - 1, d));
     }
-    function load(key, fallback) {
-  if (key === SUBMISSIONS_KEY) {
-    return JSON.parse(JSON.stringify(fallback));
-  }
-
+function load(key, fallback) {
   const raw = localStorage.getItem(key);
 
   if (!raw) {
@@ -899,15 +892,20 @@
     return JSON.parse(JSON.stringify(fallback));
   }
 
-  return JSON.parse(raw);
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn(`${key} JSON 파싱 실패, 기본값 반환`);
+    return JSON.parse(JSON.stringify(fallback));
+  }
 }
-    async function save(key, value) {
-  if (key !== SUBMISSIONS_KEY) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-      console.warn(`${key} localStorage 저장 실패:`, error);
-    }
+
+async function save(key, value) {
+  // ✅ 모든 데이터를 localStorage에 백업 저장
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn(`${key} localStorage 저장 실패:`, error);
   }
 
   if (!useSupabase) return;
@@ -937,6 +935,7 @@
 
   console.log(`${tableName} 저장 완료`);
 }
+
     async function loadSubmissionsFromSupabase() {
 
   if (!useSupabase) return;
@@ -1374,7 +1373,7 @@ async function loadFromSupabase() {
         todayRow.adminSaved = false;
         todayRow.updatedAt = nowText();
       } else {
-        attendance.unshift({ id: Date.now(), userId: user.id, date: today(), checkIn: timeOnly(), checkOut: '', status: '근무중', adminSaved: false, updatedAt: nowText(), leaveRequestedAt: '', leaveApprovedAt: '', leaveRejectedAt: '', leaveApprovedBy: '' });
+        attendance.unshift({ id: `${user.id}_${today()}`, userId: user.id, date: today(), checkIn: timeOnly(), checkOut: '', status: '근무중', adminSaved: false, updatedAt: nowText(), leaveRequestedAt: '', leaveApprovedAt: '', leaveRejectedAt: '', leaveApprovedBy: '' });
       }
       save(ATTENDANCE_KEY, attendance);
       syncBackups();
@@ -1461,7 +1460,7 @@ async function loadFromSupabase() {
         targetRow.updatedAt = nowText();
       } else {
         attendance.unshift({
-          id: Date.now(),
+          id:`${user.id}_${leaveDate}`,
           userId: user.id,
           date: leaveDate,
           checkIn: '',
@@ -1826,20 +1825,69 @@ async function loadFromSupabase() {
           if (useSupabase) syncToSupabase();
     }
 
-    async function syncToSupabase() {
+   // ✅ syncToSupabase 함수를 깔끔하게 정리
+async function syncToSupabase() {
   try {
-    for (const user of users) {
+    // users 업로드
+    if (users.length) {
       const { error } = await supabaseClient
         .from('users')
-        .upsert(user, { onConflict: 'id' });
-
+        .upsert(users, { onConflict: 'id' });
       if (error) throw error;
     }
 
-    async function uploadLocalDataToSupabase() {
+    // assignments 업로드
+    if (assignments.length) {
+      const { error } = await supabaseClient
+        .from('assignments')
+        .upsert(assignments, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // submissions 업로드
+    if (submissions.length) {
+      const { error } = await supabaseClient
+        .from('submissions')
+        .upsert(submissions, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // attendance 업로드 (복합키로 변환)
+    if (attendance.length) {
+      const attendanceRows = attendance.map(record => ({
+        ...record,
+        id: `${record.userId}_${record.date}`
+      }));
+      const { error } = await supabaseClient
+        .from('attendance')
+        .upsert(attendanceRows, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // company_holidays 업로드
+    if (companyHolidays.length) {
+      const { error } = await supabaseClient
+        .from('company_holidays')
+        .upsert(companyHolidays, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    console.log('✅ Supabase 동기화 완료');
+  } catch (error) {
+    console.error('❌ Supabase 동기화 오류:', error.message || error);
+    alert('Supabase 저장 오류: ' + (error.message || error));
+  }
+}
+
+// ✅ 전역 함수로 분리
+async function uploadLocalDataToSupabase() {
   await syncToSupabase();
   alert('현재 브라우저 데이터를 Supabase에 업로드했습니다.');
 }
+
+// ✅ HTML에서 접근 가능하도록 window 객체에 바인딩
+window.uploadLocalDataToSupabase = uploadLocalDataToSupabase;
+
     for (const assignment of assignments) {
       const { error } = await supabaseClient
         .from('assignments')
@@ -1952,12 +2000,10 @@ function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
       showPage(currentUser()?.role === 'admin' ? 'assignmentsPage' : 'dashboardPage');
     }
 
-    function renderAll() {
+  function renderAll() {
   users = load(USERS_KEY, seedUsers);
   assignments = load(ASSIGNMENTS_KEY, seedAssignments);
-
-  // submissions는 여기서 다시 load하지 않음
-
+  submissions = load(SUBMISSIONS_KEY, []);  // ✅ 추가
   attendance = load(ATTENDANCE_KEY, []);
   backupAll = load(BACKUP_ALL_KEY, {});
   attendanceBackups = load(BACKUP_ATTENDANCE_MONTHLY_KEY, {});
@@ -1973,6 +2019,7 @@ function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
   renderAdmin();
   renderSubmissionManager();
 }
+
 
     function renderSidebar() {
       const user = currentUser();
@@ -2787,7 +2834,7 @@ const existing = submissions.find(s =>
   });
 }
       await save(SUBMISSIONS_KEY, submissions);
-      //syncBackups();
+      syncBackups();
       input.value = '';
       renderAll();
     }
@@ -3652,11 +3699,15 @@ assignments.unshift(updatedAssignment);
     window.approveLeaveRequest = approveLeaveRequest;
     window.rejectLeaveRequest = rejectLeaveRequest;
 
-    function boot() {
-      syncBackups();
-      if (session && currentUser()) enterApp();
-    }
-    boot();
+async function boot() {
+  syncBackups();
+  if (useSupabase) {
+    await loadFromSupabase(); // ✅ 추가
+  }
+  if (session && currentUser()) enterApp();
+}
+boot();
+ 
     renderAll();
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
