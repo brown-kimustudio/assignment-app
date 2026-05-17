@@ -910,6 +910,8 @@ async function save(key, value) {
 
   if (!useSupabase) return;
 
+  return;
+/*
   const tableByKey = {
     [USERS_KEY]: 'users',
     [ASSIGNMENTS_KEY]: 'assignments',
@@ -934,6 +936,7 @@ async function save(key, value) {
   }
 
   console.log(`${tableName} 저장 완료`);
+*/
 }
 
     async function loadSubmissionsFromSupabase() {
@@ -1822,71 +1825,139 @@ async function loadFromSupabase() {
       save(BACKUP_ATTENDANCE_MONTHLY_KEY, attendanceBackups);
       save(BACKUP_ASSIGNMENT_WEEKLY_KEY, assignmentBackups);
       save(BACKUP_SUBMISSION_WEEKLY_KEY, submissionBackups);
-          if (useSupabase) syncToSupabase();
+          //if (useSupabase) syncToSupabase();
     }
 
-   // ✅ syncToSupabase 함수를 깔끔하게 정리
-async function syncToSupabase() {
+    // ✅ 배열을 지정된 크기로 나누는 헬퍼 함수
+function chunkArray(array, chunkSize) {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+ async function syncToSupabase() {
   try {
-    // users 업로드
+    const CHUNK_SIZE = 30; // 한 번에 전송할 데이터 개수 (조정 가능)
+    
+    console.log('Supabase 동기화 시작...');
+
+    // 1. users 배치 업로드
     if (users.length) {
-      const { error } = await supabaseClient
-        .from('users')
-        .upsert(users, { onConflict: 'id' });
-      if (error) throw error;
+      const userChunks = chunkArray(users, CHUNK_SIZE);
+      for (let i = 0; i < userChunks.length; i++) {
+        const { error } = await supabaseClient
+          .from('users')
+          .upsert(userChunks[i], { onConflict: 'id' });
+        if (error) throw error;
+        console.log(`users ${i + 1}/${userChunks.length} 청크 완료`);
+      }
     }
 
-    // assignments 업로드
+    // 2. assignments 배치 업로드  
     if (assignments.length) {
-      const { error } = await supabaseClient
-        .from('assignments')
-        .upsert(assignments, { onConflict: 'id' });
-      if (error) throw error;
+      const assignmentChunks = chunkArray(assignments, CHUNK_SIZE);
+      for (let i = 0; i < assignmentChunks.length; i++) {
+        const { error } = await supabaseClient
+          .from('assignments')
+          .upsert(assignmentChunks[i], { onConflict: 'id' });
+        if (error) throw error;
+        console.log(`assignments ${i + 1}/${assignmentChunks.length} 청크 완료`);
+      }
     }
 
-    // submissions 업로드
+    // 3. submissions 배치 업로드 (이미지 데이터 때문에 더 작은 청크 사용)
     if (submissions.length) {
-      const { error } = await supabaseClient
-        .from('submissions')
-        .upsert(submissions, { onConflict: 'id' });
-      if (error) throw error;
+      const submissionChunks = chunkArray(submissions, Math.min(CHUNK_SIZE, 15));
+      for (let i = 0; i < submissionChunks.length; i++) {
+        const { error } = await supabaseClient
+          .from('submissions')
+          .upsert(submissionChunks[i], { onConflict: 'id' });
+        if (error) throw error;
+        console.log(`submissions ${i + 1}/${submissionChunks.length} 청크 완료`);
+      }
     }
 
-    // attendance 업로드 (복합키로 변환)
+    // 4. attendance 배치 업로드 (복합키 변환 포함)
     if (attendance.length) {
       const attendanceRows = attendance.map(record => ({
         ...record,
         id: `${record.userId}_${record.date}`
       }));
-      const { error } = await supabaseClient
-        .from('attendance')
-        .upsert(attendanceRows, { onConflict: 'id' });
-      if (error) throw error;
+      const attendanceChunks = chunkArray(attendanceRows, CHUNK_SIZE);
+      for (let i = 0; i < attendanceChunks.length; i++) {
+        const { error } = await supabaseClient
+          .from('attendance')
+          .upsert(attendanceChunks[i], { onConflict: 'id' });
+        if (error) throw error;
+        console.log(`attendance ${i + 1}/${attendanceChunks.length} 청크 완료`);
+      }
     }
 
-    // company_holidays 업로드
+    // 5. company_holidays 배치 업로드
     if (companyHolidays.length) {
-      const { error } = await supabaseClient
-        .from('company_holidays')
-        .upsert(companyHolidays, { onConflict: 'id' });
-      if (error) throw error;
+      const holidayChunks = chunkArray(companyHolidays, CHUNK_SIZE);
+      for (let i = 0; i < holidayChunks.length; i++) {
+        const { error } = await supabaseClient
+          .from('company_holidays')
+          .upsert(holidayChunks[i], { onConflict: 'id' });
+        if (error) throw error;
+        console.log(`company_holidays ${i + 1}/${holidayChunks.length} 청크 완료`);
+      }
     }
 
     console.log('✅ Supabase 동기화 완료');
+
   } catch (error) {
     console.error('❌ Supabase 동기화 오류:', error.message || error);
-    alert('Supabase 저장 오류: ' + (error.message || error));
+    throw error; // 상위로 오류 전파
   }
 }
 
-// ✅ 전역 함수로 분리
-async function uploadLocalDataToSupabase() {
-  await syncToSupabase();
-  alert('현재 브라우저 데이터를 Supabase에 업로드했습니다.');
+async function upsertSingleRecord(tableName, record) {
+  if (!useSupabase) return;
+  
+  try {
+    const { error } = await supabaseClient
+      .from(tableName)
+      .upsert(record, { onConflict: 'id' });
+    
+    if (error) {
+      console.warn(`${tableName} 단건 저장 실패:`, error.message);
+    } else {
+      console.log(`${tableName} 단건 저장 성공`);
+    }
+  } catch (error) {
+    console.warn(`${tableName} 단건 저장 오류:`, error.message);
+  }
 }
 
-// ✅ HTML에서 접근 가능하도록 window 객체에 바인딩
+
+// ✅ 전역 함수로 분리
+async function uploadLocalDataToSupabase() {
+  try {
+    const totalRecords = users.length + assignments.length + submissions.length + attendance.length + companyHolidays.length;
+    
+    if (totalRecords === 0) {
+      alert('업로드할 데이터가 없습니다.');
+      return;
+    }
+
+    alert(`${totalRecords}개 레코드 업로드를 시작합니다. 데이터 양에 따라 시간이 걸릴 수 있습니다.`);
+    
+    await syncToSupabase();
+    
+    alert('✅ Supabase 업로드 완료!');
+  } catch (error) {
+    alert(`❌ 업로드 실패: ${error.message}`);
+    console.error('업로드 상세 오류:', error);
+  }
+}
+
+// ✅ HTML에서 접근 가능하도록 전역 바인딩
 window.uploadLocalDataToSupabase = uploadLocalDataToSupabase;
+
 
     for (const assignment of assignments) {
       const { error } = await supabaseClient
