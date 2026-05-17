@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assignment & Attendance Management System</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -277,91 +276,6 @@
             color: var(--danger);
         }
         
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .modal.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: var(--surface);
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .modal-header h2 {
-            margin: 0;
-        }
-        
-        .close-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 24px;
-            cursor: pointer;
-        }
-        
-        .image-preview {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .image-item {
-            position: relative;
-            border-radius: 6px;
-            overflow: hidden;
-            background: var(--surface-light);
-            aspect-ratio: 1;
-        }
-        
-        .image-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .image-item .remove-btn {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background: var(--danger);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
         .message {
             padding: 15px;
             border-radius: 6px;
@@ -385,12 +299,6 @@
             border: 1px solid var(--danger);
         }
         
-        .message.info {
-            background: rgba(99, 102, 241, 0.2);
-            color: var(--primary);
-            border: 1px solid var(--primary);
-        }
-        
         @media (max-width: 1180px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -399,7 +307,6 @@
     </style>
 </head>
 <body>
-    <!-- Auth View -->
     <div id="authView" class="auth-view">
         <div class="login-card">
             <h2>로그인</h2>
@@ -409,14 +316,13 @@
             </div>
             <div class="form-group">
                 <label>비밀번호</label>
-                <input type="password" id="loginPassword" placeholder="비밀번호 입력">
+                <input type="password" id="loginPassword" placeholder="비밀번호">
             </div>
             <button class="btn btn-primary" onclick="handleLogin()">로그인</button>
             <div id="loginMsg" style="margin-top: 15px; text-align: center; color: var(--text-muted);"></div>
         </div>
     </div>
     
-    <!-- Main App -->
     <div id="appView" style="display: none;">
         <header>
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -430,14 +336,11 @@
         
         <div class="container">
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('dashboard')">대시보드</button>
-                <button class="tab-btn" onclick="switchTab('attendance')">출퇴근</button>
-                <button class="tab-btn" onclick="switchTab('assignments')">과제</button>
-                <button class="tab-btn" onclick="switchTab('submissions')">제출</button>
-                <button class="tab-btn" onclick="switchTab('admin')">관리</button>
+                <button class="tab-btn active" onclick="switchTab(event, 'dashboard')">대시보드</button>
+                <button class="tab-btn" onclick="switchTab(event, 'attendance')">출퇴근</button>
+                <button class="tab-btn" onclick="switchTab(event, 'admin')">관리</button>
             </div>
             
-            <!-- Dashboard Tab -->
             <div id="dashboard" class="tab-content active">
                 <div class="dashboard-grid">
                     <div class="card">
@@ -471,26 +374,9 @@
                             <span id="dashStatus">-</span>
                         </div>
                     </div>
-                    
-                    <div class="card">
-                        <h3>📊 연차 현황</h3>
-                        <div class="card-info">
-                            <label>연차 총수:</label>
-                            <span id="dashAnnualTotal">0</span>
-                        </div>
-                        <div class="card-info">
-                            <label>사용 연차:</label>
-                            <span id="dashAnnualUsed">0</span>
-                        </div>
-                        <div class="card-info">
-                            <label>남은 연차:</label>
-                            <span id="dashAnnualRemaining">0</span>
-                        </div>
-                    </div>
                 </div>
             </div>
             
-            <!-- Attendance Tab -->
             <div id="attendance" class="tab-content">
                 <div class="card">
                     <h3>⏰ 출퇴근</h3>
@@ -511,135 +397,29 @@
                         <tbody id="attendanceList"></tbody>
                     </table>
                 </div>
-                
-                <div class="card" style="margin-top: 20px;">
-                    <h3>📝 연차 신청</h3>
-                    <div class="form-group">
-                        <label>신청 사유</label>
-                        <textarea id="leaveReason" rows="3" placeholder="연차 신청 사유를 입력하세요"></textarea>
-                    </div>
-                    <button class="btn btn-primary" onclick="requestLeave()">연차 신청</button>
-                    <div id="leaveMsg" class="message" style="margin-top: 15px;"></div>
-                </div>
             </div>
             
-            <!-- Assignments Tab -->
-            <div id="assignments" class="tab-content">
-                <div class="card">
-                    <h3>📋 주간 과제</h3>
-                    <div id="assignmentsList"></div>
-                </div>
-            </div>
-            
-            <!-- Submissions Tab -->
-            <div id="submissions" class="tab-content">
-                <div class="card">
-                    <h3>📤 과제 제출</h3>
-                    <div id="submissionsList"></div>
-                </div>
-            </div>
-            
-            <!-- Admin Tab -->
             <div id="admin" class="tab-content">
                 <div class="card">
                     <h3>⚙️ 관리자 도구</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                        <button class="btn btn-secondary" onclick="showAdminPanel('users')">직원 관리</button>
-                        <button class="btn btn-secondary" onclick="showAdminPanel('assignments')">과제 관리</button>
-                        <button class="btn btn-secondary" onclick="showAdminPanel('attendance')">출퇴근 관리</button>
-                        <button class="btn btn-secondary" onclick="showAdminPanel('backup')">백업</button>
-                    </div>
-                </div>
-                
-                <div id="adminPanel" class="card" style="margin-top: 20px; display: none;">
-                    <div id="adminContent"></div>
+                    <button class="btn btn-secondary" onclick="downloadAllData()" style="width: 100%; margin-bottom: 10px;">📥 전체 데이터 다운로드 (JSON)</button>
+                    <button class="btn btn-secondary" onclick="downloadAttendanceExcel()" style="width: 100%;">📊 출퇴근 데이터 (XLSX)</button>
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Modal -->
-    <div id="modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle"></h2>
-                <button class="close-btn" onclick="closeModal()">✕</button>
-            </div>
-            <div id="modalBody"></div>
         </div>
     </div>
 
     <script>
-        // ===== Supabase Setup =====
-        const SUPABASE_URL = "https://ylxshpuskimbaipscumx.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_EAGv5dX3Wf621_5P4_biVg_x4u-KguI";
-        const SUPABASE_STORAGE_BUCKET = "assignment-images";
-        
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // ===== Global State =====
         let currentUser = null;
         let users = [];
-        let assignments = [];
-        let submissions = [];
         let attendance = [];
-        let holidays = [];
-        let useSupabase = false;
         
-        // ===== Constants =====
         const USERS_KEY = 'mvp_users_v9';
-        const ASSIGNMENTS_KEY = 'mvp_assignments_v9';
-        const SUBMISSIONS_KEY = 'mvp_submissions_v9';
         const ATTENDANCE_KEY = 'mvp_attendance_v9';
-        const HOLIDAYS_KEY = 'mvp_holidays_v9';
         
         const categoryLabel = { A: 'A팀', B: 'B팀', C: 'C팀', D: 'D팀' };
-        const dayLabel = ['일', '월', '화', '수', '목', '금', '토'];
         
-        // ===== Initialize =====
-        async function init() {
-            await loadAllData();
-            const loginId = new URLSearchParams(window.location.search).get('loginId');
-            const password = new URLSearchParams(window.location.search).get('password');
-            if (loginId && password) {
-                document.getElementById('loginId').value = loginId;
-                document.getElementById('loginPassword').value = password;
-                await handleLogin();
-            }
-        }
-        
-        // ===== Data Management =====
-        async function loadAllData() {
-            try {
-                users = await load(USERS_KEY, initializeDefaultUsers());
-                assignments = await load(ASSIGNMENTS_KEY, []);
-                submissions = await load(SUBMISSIONS_KEY, []);
-                attendance = await load(ATTENDANCE_KEY, []);
-                holidays = await load(HOLIDAYS_KEY, []);
-            } catch (e) {
-                console.warn('Data load error:', e);
-            }
-        }
-        
-        async function load(key, fallback) {
-            try {
-                if (useSupabase) {
-                    const { data, error } = await supabaseClient
-                        .from('app_data')
-                        .select('value')
-                        .eq('key', key)
-                        .single();
-                    if (data) {
-                        const value = JSON.parse(data.value);
-                        localStorage.setItem(key, JSON.stringify(value));
-                        return value;
-                    }
-                }
-            } catch (e) {
-                console.warn('Supabase load failed, using local:', e);
-            }
-            
+        function load(key, fallback) {
             const raw = localStorage.getItem(key);
             if (!raw) {
                 localStorage.setItem(key, JSON.stringify(fallback));
@@ -648,50 +428,20 @@
             return JSON.parse(raw);
         }
         
-        async function save(key, value) {
+        function save(key, value) {
             localStorage.setItem(key, JSON.stringify(value));
-            try {
-                if (useSupabase) {
-                    const { error } = await supabaseClient
-                        .from('app_data')
-                        .upsert({ key, value: JSON.stringify(value) }, { onConflict: 'key' });
-                    if (error) console.warn('Supabase save error:', error);
-                }
-            } catch (e) {
-                console.warn('Supabase save failed:', e);
-            }
         }
         
-        // ===== Image Upload to Supabase Storage =====
-        async function uploadImageToStorage(file, path) {
-            try {
-                const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-                const filePath = `${path}/${fileName}`;
-                
-                const { data, error } = await supabaseClient.storage
-                    .from(SUPABASE_STORAGE_BUCKET)
-                    .upload(filePath, file);
-                
-                if (error) throw error;
-                
-                const { data: urlData } = supabaseClient.storage
-                    .from(SUPABASE_STORAGE_BUCKET)
-                    .getPublicUrl(filePath);
-                
-                return {
-                    name: file.name,
-                    path: filePath,
-                    url: urlData.publicUrl,
-                    uploadedAt: new Date().toISOString()
-                };
-            } catch (e) {
-                console.error('Image upload failed:', e);
-                throw e;
-            }
+        function init() {
+            users = load(USERS_KEY, [
+                { id: '관리자', password: 'admin1234', name: '관리자', role: 'admin', category: 'A', annualLeaveTotal: 15 },
+                { id: '김수연', password: '1234', name: '김수연', role: 'worker', category: 'A', annualLeaveTotal: 15 },
+                { id: '이준호', password: '1234', name: '이준호', role: 'worker', category: 'B', annualLeaveTotal: 15 }
+            ]);
+            attendance = load(ATTENDANCE_KEY, []);
         }
         
-        // ===== Authentication =====
-        async function handleLogin() {
+        function handleLogin() {
             const id = document.getElementById('loginId').value.trim();
             const pw = document.getElementById('loginPassword').value.trim();
             
@@ -720,8 +470,7 @@
             document.getElementById('loginPassword').value = '';
         }
         
-        // ===== UI Functions =====
-        function switchTab(tabName) {
+        function switchTab(event, tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
@@ -735,44 +484,31 @@
             setTimeout(() => el.classList.remove('show'), 5000);
         }
         
-        function openModal(title, content) {
-            document.getElementById('modalTitle').textContent = title;
-            document.getElementById('modalBody').innerHTML = content;
-            document.getElementById('modal').classList.add('active');
-        }
-        
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-        }
-        
-        // ===== Attendance Functions =====
         async function checkIn() {
             const today = new Date().toISOString().split('T')[0];
             const existing = attendance.find(a => a.userId === currentUser.id && a.date === today);
             
             if (existing && existing.checkIn) {
-                showMessage('attendanceMsg', '이미 출근했습니다', 'info');
+                showMessage('attendanceMsg', '이미 출근했습니다', 'error');
                 return;
             }
             
             const now = new Date();
+            const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
             if (existing) {
-                existing.checkIn = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                existing.checkIn = time;
             } else {
                 attendance.push({
                     userId: currentUser.id,
                     date: today,
-                    checkIn: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+                    checkIn: time,
                     checkOut: null,
-                    status: '근무중',
-                    leaveRequestedAt: null,
-                    leaveApprovedAt: null,
-                    leaveRejectedAt: null,
-                    leaveApprovedBy: null
+                    status: '근무중'
                 });
             }
             
-            await save(ATTENDANCE_KEY, attendance);
+            save(ATTENDANCE_KEY, attendance);
             renderAll();
             showMessage('attendanceMsg', '출근 처리되었습니다', 'success');
         }
@@ -787,67 +523,21 @@
             }
             
             if (existing.checkOut) {
-                showMessage('attendanceMsg', '이미 퇴근했습니다', 'info');
+                showMessage('attendanceMsg', '이미 퇴근했습니다', 'error');
                 return;
             }
             
             const now = new Date();
-            existing.checkOut = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            existing.checkOut = time;
             existing.status = '퇴근';
             
-            await save(ATTENDANCE_KEY, attendance);
+            save(ATTENDANCE_KEY, attendance);
             renderAll();
             showMessage('attendanceMsg', '퇴근 처리되었습니다', 'success');
         }
         
-        async function requestLeave() {
-            const reason = document.getElementById('leaveReason').value.trim();
-            if (!reason) {
-                showMessage('leaveMsg', '신청 사유를 입력하세요', 'error');
-                return;
-            }
-            
-            const today = new Date().toISOString().split('T')[0];
-            const existing = attendance.find(a => a.userId === currentUser.id && a.date === today);
-            
-            if (!existing) {
-                attendance.push({
-                    userId: currentUser.id,
-                    date: today,
-                    checkIn: null,
-                    checkOut: null,
-                    status: '연차신청',
-                    leaveRequestedAt: new Date().toISOString(),
-                    leaveApprovedAt: null,
-                    leaveRejectedAt: null,
-                    leaveApprovedBy: null,
-                    leaveReason: reason
-                });
-            } else {
-                existing.status = '연차신청';
-                existing.leaveRequestedAt = new Date().toISOString();
-                existing.leaveReason = reason;
-            }
-            
-            await save(ATTENDANCE_KEY, attendance);
-            document.getElementById('leaveReason').value = '';
-            renderAll();
-            showMessage('leaveMsg', '연차가 신청되었습니다', 'success');
-        }
-        
-        // ===== Render Functions =====
         function renderAll() {
-            if (currentUser?.role === 'admin') {
-                renderAdminDashboard();
-            } else {
-                renderWorkerDashboard();
-            }
-            renderAttendance();
-            renderAssignments();
-            renderSubmissions();
-        }
-        
-        function renderWorkerDashboard() {
             const today = new Date().toISOString().split('T')[0];
             const todayAttendance = attendance.find(a => a.userId === currentUser.id && a.date === today);
             
@@ -859,115 +549,16 @@
             document.getElementById('dashCheckOut').textContent = todayAttendance?.checkOut || '-';
             document.getElementById('dashStatus').textContent = todayAttendance?.status || '미기록';
             
-            const approvedLeave = attendance.filter(a => a.userId === currentUser.id && a.leaveApprovedAt).length;
-            document.getElementById('dashAnnualTotal').textContent = currentUser.annualLeaveTotal || 15;
-            document.getElementById('dashAnnualUsed').textContent = approvedLeave;
-            document.getElementById('dashAnnualRemaining').textContent = (currentUser.annualLeaveTotal || 15) - approvedLeave;
-        }
-        
-        function renderAdminDashboard() {
-            document.getElementById('userInfo').textContent = `${currentUser.name} (관리자)`;
-        }
-        
-        function renderAttendance() {
             const userAttendance = attendance.filter(a => a.userId === currentUser.id).slice(-30);
             let html = '';
-            
             userAttendance.forEach(a => {
-                html += `
-                    <tr>
-                        <td>${a.date}</td>
-                        <td>${a.checkIn || '-'}</td>
-                        <td>${a.checkOut || '-'}</td>
-                        <td><span class="status-badge status-${a.status === '퇴근' ? 'approved' : a.status === '연차신청' ? 'pending' : 'rejected'}">${a.status}</span></td>
-                    </tr>
-                `;
+                html += `<tr><td>${a.date}</td><td>${a.checkIn || '-'}</td><td>${a.checkOut || '-'}</td><td><span class="status-badge status-${a.status === '퇴근' ? 'approved' : 'pending'}">${a.status}</span></td></tr>`;
             });
-            
             document.getElementById('attendanceList').innerHTML = html;
         }
         
-        function renderAssignments() {
-            const html = assignments.map((a, idx) => `
-                <div style="margin-bottom: 15px; padding: 15px; background: var(--surface-light); border-radius: 6px;">
-                    <h4>${a.title}</h4>
-                    <p style="color: var(--text-muted); margin: 10px 0;">${a.description}</p>
-                    <p style="color: var(--text-muted); font-size: 12px;">마감: ${a.dueDate}</p>
-                </div>
-            `).join('');
-            
-            document.getElementById('assignmentsList').innerHTML = html || '<p style="color: var(--text-muted);">과제가 없습니다</p>';
-        }
-        
-        function renderSubmissions() {
-            const userSubmissions = submissions.filter(s => s.userId === currentUser.id);
-            const html = userSubmissions.map(s => `
-                <div style="margin-bottom: 15px; padding: 15px; background: var(--surface-light); border-radius: 6px;">
-                    <h4>${s.assignmentId}</h4>
-                    <p style="color: var(--text-muted); margin: 10px 0;">이미지: ${s.images?.length || 0}장</p>
-                    <p><span class="status-badge status-${s.status === 'approved' ? 'approved' : s.status === 'pending' ? 'pending' : 'rejected'}">${s.status}</span></p>
-                    ${s.images?.length > 0 ? `
-                        <div class="image-preview">
-                            ${s.images.map(img => `<img src="${img.url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">`).join('')}
-                        </div>
-                    ` : ''}
-                </div>
-            `).join('');
-            
-            document.getElementById('submissionsList').innerHTML = html || '<p style="color: var(--text-muted);">제출이 없습니다</p>';
-        }
-        
-        function showAdminPanel(type) {
-            let content = '';
-            
-            if (type === 'users') {
-                content = `
-                    <h4>직원 관리</h4>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>아이디</th>
-                                <th>이름</th>
-                                <th>소속</th>
-                                <th>직책</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${users.map(u => `
-                                <tr>
-                                    <td>${u.id}</td>
-                                    <td>${u.name}</td>
-                                    <td>${categoryLabel[u.category] || '-'}</td>
-                                    <td>${u.role === 'admin' ? '관리자' : '직원'}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            }
-            
-            if (type === 'backup') {
-                content = `
-                    <h4>데이터 백업</h4>
-                    <button class="btn btn-primary" onclick="downloadAllData()" style="width: 100%; margin-bottom: 10px;">📥 전체 데이터 다운로드 (JSON)</button>
-                    <button class="btn btn-primary" onclick="downloadAttendanceExcel()" style="width: 100%; margin-bottom: 10px;">📊 출퇴근 데이터 다운로드 (XLSX)</button>
-                `;
-            }
-            
-            document.getElementById('adminContent').innerHTML = content;
-            document.getElementById('adminPanel').style.display = 'block';
-        }
-        
-        async function downloadAllData() {
-            const data = {
-                users,
-                assignments,
-                submissions,
-                attendance,
-                holidays,
-                exportedAt: new Date().toISOString()
-            };
-            
+        function downloadAllData() {
+            const data = { users, attendance, exportedAt: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -976,7 +567,7 @@
             a.click();
         }
         
-        async function downloadAttendanceExcel() {
+        function downloadAttendanceExcel() {
             const sheet = attendance.map(a => ({
                 '날짜': a.date,
                 '직원': users.find(u => u.id === a.userId)?.name || '-',
@@ -990,16 +581,6 @@
             XLSX.writeFile(wb, `attendance-${new Date().toISOString().split('T')[0]}.xlsx`);
         }
         
-        // ===== Default Data =====
-        function initializeDefaultUsers() {
-            return [
-                { id: '관리자', password: 'admin1234', name: '관리자', role: 'admin', category: 'A', workDays: [1,2,3,4,5], workStart: '09:00', workEnd: '18:00', annualLeaveTotal: 15 },
-                { id: '김수연', password: '1234', name: '김수연', role: 'worker', category: 'A', workDays: [1,2,3,4,5], workStart: '09:00', workEnd: '18:00', annualLeaveTotal: 15 },
-                { id: '이준호', password: '1234', name: '이준호', role: 'worker', category: 'B', workDays: [1,2,3,4,5], workStart: '09:00', workEnd: '18:00', annualLeaveTotal: 15 }
-            ];
-        }
-        
-        // ===== Initialize App =====
         init();
     </script>
 </body>
