@@ -1839,36 +1839,36 @@ function chunkArray(array, chunkSize) {
   return chunks;
 }
 
- async function syncToSupabase() {
+async function syncToSupabase() {
   try {
-    // users 테이블 업로드
+    // 1. users 테이블 업로드 (배치 처리)
     if (users.length) {
       const { error } = await supabaseClient
         .from('users')
         .upsert(users, { onConflict: 'id' });
       if (error) throw error;
-      console.log('users 업로드 완료');
+      console.log(`users ${users.length}개 업로드 완료`);
     }
 
-    // assignments 테이블 업로드
+    // 2. assignments 테이블 업로드 (배치 처리)
     if (assignments.length) {
       const { error } = await supabaseClient
         .from('assignments')
         .upsert(assignments, { onConflict: 'id' });
       if (error) throw error;
-      console.log('assignments 업로드 완료');
+      console.log(`assignments ${assignments.length}개 업로드 완료`);
     }
 
-    // submissions 테이블 업로드
+    // 3. submissions 테이블 업로드 (배치 처리)
     if (submissions.length) {
       const { error } = await supabaseClient
         .from('submissions')
         .upsert(submissions, { onConflict: 'id' });
       if (error) throw error;
-      console.log('submissions 업로드 완료');
+      console.log(`submissions ${submissions.length}개 업로드 완료`);
     }
 
-    // attendance 테이블 업로드 (복합키 변환)
+    // 4. attendance 테이블 업로드 (복합키 변환 + 배치 처리)
     if (attendance.length) {
       const attendanceRows = attendance.map(record => ({
         ...record,
@@ -1878,16 +1878,16 @@ function chunkArray(array, chunkSize) {
         .from('attendance')
         .upsert(attendanceRows, { onConflict: 'id' });
       if (error) throw error;
-      console.log('attendance 업로드 완료');
+      console.log(`attendance ${attendance.length}개 업로드 완료`);
     }
 
-    // company_holidays 테이블 업로드
+    // 5. company_holidays 테이블 업로드 (배치 처리)
     if (companyHolidays.length) {
       const { error } = await supabaseClient
         .from('company_holidays')
         .upsert(companyHolidays, { onConflict: 'id' });
       if (error) throw error;
-      console.log('company_holidays 업로드 완료');
+      console.log(`company_holidays ${companyHolidays.length}개 업로드 완료`);
     }
 
     console.log('✅ Supabase 동기화 완료');
@@ -1898,7 +1898,7 @@ function chunkArray(array, chunkSize) {
   }
 }
 
-// ✅ syncToSupabase 함수 바깥에 별도로 선언
+// ✅ HTML 버튼에서 호출할 수 있도록 함수 분리 및 전역 설정
 async function uploadLocalDataToSupabase() {
   try {
     const totalRecords = users.length + assignments.length + submissions.length + attendance.length + companyHolidays.length;
@@ -1908,60 +1908,16 @@ async function uploadLocalDataToSupabase() {
       return;
     }
 
-    alert(`${totalRecords}개 레코드 업로드를 시작합니다.`);
+    alert(`${totalRecords}개 레코드 업로드를 시작합니다. 완료까지 기다려주세요.`);
     await syncToSupabase();
     alert('✅ Supabase 업로드 완료!');
   } catch (error) {
     alert('❌ 업로드 실패: ' + error.message);
+    console.error('업로드 상세 오류:', error);
   }
 }
-
-// ✅ HTML에서 접근 가능하도록 전역 바인딩
 window.uploadLocalDataToSupabase = uploadLocalDataToSupabase;
 
-
-
-    for (const assignment of assignments) {
-      const { error } = await supabaseClient
-        .from('assignments')
-        .upsert(assignment, { onConflict: 'id' });
-
-      if (error) throw error;
-    }
-
-    for (const submission of submissions) {
-      const { error } = await supabaseClient
-        .from('submissions')
-        .upsert(submission, { onConflict: 'id' });
-
-      if (error) throw error;
-    }
-
-    for (const record of attendance) {
-      const { error } = await supabaseClient
-        .from('attendance')
-        .upsert({
-          ...record,
-          id: `${record.userId}_${record.date}`
-        }, { onConflict: 'id' });
-
-      if (error) throw error;
-    }
-
-    for (const holiday of companyHolidays) {
-      const { error } = await supabaseClient
-        .from('company_holidays')
-        .upsert(holiday, { onConflict: 'id' });
-
-      if (error) throw error;
-    }
-
-    console.log('✅ Supabase 동기화 완료');
-  } catch (error) {
-    console.error('❌ Supabase 동기화 오류:', error.message || error);
-    alert('Supabase 저장 오류: ' + (error.message || error));
-  }
-}
     function downloadJson(filename, data) {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
