@@ -3239,11 +3239,16 @@ const existing = submissions.find(s =>
 
 let referenceImages = existing?.referenceImages || [];
      if (files.length) {
-  const rawImages = await Promise.all(files.map(readFileAsDataUrl));
-  const newImages = rawImages.map((dataUrl, index) => ({
-    name: files[index].name,
-    dataUrl
-  }));
+let newImages = [];
+
+try {
+  newImages = await Promise.all(
+    files.map(file => uploadAssignmentImageToStorage(file))
+  );
+} catch (error) {
+  alert('과제 이미지 업로드 실패: ' + error.message);
+  return;
+}
 
   referenceImages = [
     ...(existing?.referenceImages || []),
