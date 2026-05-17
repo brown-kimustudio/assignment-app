@@ -1590,15 +1590,25 @@ async function loadFromSupabase() {
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
     function getWorkerSubmissionForWeek(userId, category, targetWeek) {
-      const assignment = getAssignmentByCategoryAndWeek(category, targetWeek);
-      if (!assignment) return null;
-      return submissions.find(s => {
-        const sameUser = String(s.userId) === String(userId);
-        const sameWeek = String(s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === String(targetWeek);
-        const sameAssignment = String(s.assignmentId) === String(assignment.id) || String(s.assignmentTitle || '') === String(assignment.title || '');
-        return sameUser && sameWeek && sameAssignment;
-      }) || null;
-    }
+  const assignment = getAssignmentByCategoryAndWeek(category, targetWeek);
+
+  return submissions.find(s => {
+    const sameUser = String(s.userId) === String(userId);
+    const sameWeek = String(s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === String(targetWeek);
+
+    if (!sameUser || !sameWeek) return false;
+
+    const sameAssignmentId = assignment
+      ? String(s.assignmentId) === String(assignment.id)
+      : false;
+
+    const sameAssignmentTitle = assignment
+      ? String(s.assignmentTitle || '') === String(assignment.title || '')
+      : false;
+
+    return sameAssignmentId || sameAssignmentTitle;
+  }) || null;
+}
     function getAdminAttendanceMonthOptions(category = adminDepartmentFilter) {
       const values = new Set([today().slice(0, 7)]);
       attendance.forEach(a => {
