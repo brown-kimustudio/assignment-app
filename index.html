@@ -1946,20 +1946,23 @@ try {
   existing.submittedWeek = getAssignmentWeekValue(assignment);
   existing.status = '제출완료';
 }
-      else {
-        submissions.unshift({
-          id: Date.now(),
-          assignmentId,
-          userId: user.id,
-          images: payload,
-          submittedAt: nowText(),
-          submittedDate: today(),
-          submittedWeek: getAssignmentWeekValue(assignment),
-          status: '제출완료'
-        });
-      }
+     else {
+  submissions.unshift({
+    id: crypto.randomUUID(),
+    assignmentId,
+    assignmentTitle: assignment.title,
+    submittedWeek: getAssignmentWeekValue(assignment),
+    userId: user.id,
+    workerName: user.name,
+    workerCategory: user.category,
+    images: payload,
+    submittedAt: nowText(),
+    submittedDate: today(),
+    status: '제출완료'
+  });
+}
       save(SUBMISSIONS_KEY, submissions);
-      syncBackups();
+      //syncBackups();
       fileInput.value = '';
       syncAttendanceMessage(`${assignment.title} 이미지 ${payload.length}장이 제출되었습니다.`);
       renderAll();
