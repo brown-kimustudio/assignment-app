@@ -2483,7 +2483,7 @@ try {
         const keywords = getAssignmentKeywords(a);
         const thumbHtml = sub?.images?.length ? `
           <div class="thumbs">
-            ${sub.images.map(img => `<div class="thumb-wrap"><a class="thumb-link" href="${img.dataUrl}" target="_blank" rel="noopener noreferrer"><img class="thumb" src="${img.dataUrl}" alt="${escapeHtml(img.name)}"></a><div class="thumb-caption">${escapeHtml(img.name)} · 제출본</div></div>`).join('')}
+            ${sub.images.map(img => `<div class="thumb-wrap"><a class="thumb-link" href="${img.url || img.dataUrl}" target="_blank" rel="noopener noreferrer"><img class="thumb" src="${img.url || img.dataUrl}" alt="${escapeHtml(img.name)}"></a><div class="thumb-caption">${escapeHtml(img.name)} · 제출본</div></div>`).join('')}
           </div>` : '';
         return `
           <div class="assignment-sheet">
@@ -3099,8 +3099,8 @@ const existing = submissions.find(s =>
       tbody.innerHTML = rows.length ? rows.map(({ worker, submission, requiredCount, submittedCount }) => {
         const thumbs = submission?.images?.length ? `<div class="thumbs">${submission.images.map((img, idx) => `
           <div class="thumb-wrap">
-            <img class="thumb" src="${img.dataUrl}" alt="${escapeHtml(img.name)}">
-            <a class="download-link" href="${img.dataUrl}" download="${escapeHtml(buildSubmissionDownloadName(submissionManageFilterWeek, submission, img, idx))}">다운로드</a>
+            <img class="thumb" src="${img.url || img.dataUrl}" alt="${escapeHtml(img.name)}">
+            <a class="download-link" href="${img.url || img.dataUrl}" download="${escapeHtml(buildSubmissionDownloadName(submissionManageFilterWeek, submission, img, idx))}">다운로드</a>
           </div>`).join('')}</div>` : '<div class="small">제출 이미지 없음</div>';
         const statusLabel = submission ? submission.status : '미제출';
         const statusClass = !submission ? 'danger' : (submission.status === '저장완료' ? 'ok' : 'warn');
