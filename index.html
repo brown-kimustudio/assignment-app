@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>키뮤스튜디오 - fixed</title>
+  <title>키뮤스튜디오</title>
   <style>
     :root {
       --bg: #050505;
@@ -664,11 +664,14 @@
 
         <div class="card" style="margin-top:16px;">
           <h3 style="margin-top:0;">백업 센터</h3>
-          <div class="btn-row" style="margin-bottom:16px;">
-            <button class="btn accent" type="button" onclick="uploadLocalDataToSupabase()">
-              DB로 현재 데이터 업로드
-            </button>
-          </div>
+          <div class="card" style="margin-top:16px;">
+  <h3 style="margin-top:0;">백업 센터</h3>
+
+  <div class="btn-row" style="margin-bottom:16px;">
+    <button class="btn accent" type="button" onclick="uploadLocalDataToSupabase()">
+      DB로 현재 데이터 업로드
+    </button>
+  </div>
           <div class="grid-2">
             <div class="list-item">
               <h4>전체 데이터 백업</h4>
@@ -1278,7 +1281,7 @@ async function loadFromSupabase() {
     const images = submission.images || submission.files || [];
 
     images.forEach((img, index) => {
-      const imageUrl = img.url || img.dataUrl || img;
+      const imageUrl = img.dataUrl || img.url || img;
 
       if (!imageUrl) return;
 
@@ -1563,23 +1566,10 @@ async function loadFromSupabase() {
         .filter(s => s.userId === userId && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === targetWeek)
         .reduce((sum, s) => sum + (s.images?.length || 0), 0);
     }
-    function findSubmissionForAssignment(userId, assignment) {
-      if (!assignment) return null;
-      const targetWeek = getAssignmentWeekValue(assignment);
-      return submissions.find(s =>
-        String(s.userId) === String(userId) &&
-        (
-          String(s.assignmentId) === String(assignment.id) ||
-          String(s.assignmentTitle || '') === String(assignment.title || '')
-        ) &&
-        String(s.submittedWeek || weekKeyFromDateStr(s.submittedAt || s.submittedDate)) === String(targetWeek)
-      ) || null;
-    }
-
     function getWorkerSubmissionForWeek(userId, category, targetWeek) {
       const assignment = getAssignmentByCategoryAndWeek(category, targetWeek);
       if (!assignment) return null;
-      return findSubmissionForAssignment(userId, assignment);
+      return submissions.find(s => s.userId === userId && s.assignmentId === assignment.id && (s.submittedWeek || weekKeyFromDateStr(s.submittedAt)) === targetWeek) || null;
     }
     function getAdminAttendanceMonthOptions(category = adminDepartmentFilter) {
       const values = new Set([today().slice(0, 7)]);
@@ -1850,7 +1840,7 @@ async function loadFromSupabase() {
     function renderAll() {
       users = load(USERS_KEY, seedUsers);
       assignments = load(ASSIGNMENTS_KEY, seedAssignments);
-      // submissions는 Supabase DB에서 불러온 값을 유지합니다.
+      submissions = load(SUBMISSIONS_KEY, []);
       attendance = load(ATTENDANCE_KEY, []);
       backupAll = load(BACKUP_ALL_KEY, {});
       attendanceBackups = load(BACKUP_ATTENDANCE_MONTHLY_KEY, {});
@@ -1918,13 +1908,17 @@ async function loadFromSupabase() {
       const selected = weeklyAssignments.find(a => String(a.id) === String(select.value)) || weeklyAssignments[0];
       if (selected) select.value = String(selected.id);
       const selectedWeek = selected ? getAssignmentWeekValue(selected) : getActiveAssignmentWeekForUser(user);
-      const existing = selected ? findSubmissionForAssignment(user.id, selected) : null;
+      const existing = selected ? submissions.find(s =>
+        String(s.userId) === String(user.id) &&
+        String(s.assignmentTitle || '') === String(selected.title || '') &&
+        String(s.submittedWeek || '') === String(getAssignmentWeekValue(selected))
+      ) : null;
       const weeklyTarget = getWorkerWeeklyTarget(user, selectedWeek);
       const otherSubmitted = countImagesWeek(user.id, selectedWeek, existing?.id || null);
       fileInput.disabled = false;
       submitBtn.disabled = false;
       submitBtn.style.opacity = '1';
-      submitBtn.textContent = existing ? '이미지 다시 제출' : '이미지 제출';
+      submitBtn.textContent = existing ? '이미지 추가 제출' : '이미지 제출';
       guide.textContent = selected
         ? `${selected.title} · ${getSubmissionWeekLabel(selectedWeek)} 개인 기준 ${weeklyTarget}장 / 다른 제출 ${otherSubmitted}장 / 파일 선택 후 바로 제출`
         : '현재 노출 과제를 선택한 뒤 이미지를 제출해 주세요.';
@@ -1937,8 +1931,8 @@ async function loadFromSupabase() {
       const select = document.getElementById('dashboardAssignmentSelect');
       const fileInput = document.getElementById('dashboardSubmitFiles');
       if (!select || !fileInput) return;
-      const assignmentId = Number(select.value || 0);
-      const assignment = assignments.find(a => a.id === assignmentId);
+      const assignmentId = String(select.value || '');
+      const assignment = assignments.find(a => String(a.id) === assignmentId);
       if (!assignment || assignment.category !== user.category) {
         alert('제출할 이번 주 과제를 먼저 선택해 주세요.');
         return;
@@ -1959,7 +1953,11 @@ if (!assignment) {
   return;
 }
 
-const existing = findSubmissionForAssignment(user.id, assignment);
+const existing = submissions.find(s =>
+  String(s.userId) === String(user.id) &&
+  String(s.assignmentTitle) === String(assignment.title) &&
+  String(s.submittedWeek) === String(getAssignmentWeekValue(assignment))
+);
       let payload;
 
 try {
@@ -2458,11 +2456,11 @@ try {
       const items = assignmentList || workerAssignments(user);
       if (!items.length) return emptyText ? `<div class="empty">${emptyText}</div>` : '';
       return items.map(a => {
-        const sub = findSubmissionForAssignment(user.id, a);
+        const sub = submissions.find(s => s.assignmentId === a.id && s.userId === user.id);
         const keywords = getAssignmentKeywords(a);
         const thumbHtml = sub?.images?.length ? `
           <div class="thumbs">
-            ${sub.images.map(img => `<div class="thumb-wrap"><a class="thumb-link" href="${img.url || img.dataUrl}" target="_blank" rel="noopener noreferrer"><img class="thumb" src="${img.url || img.dataUrl}" alt="${escapeHtml(img.name)}"></a><div class="thumb-caption">${escapeHtml(img.name)} · 제출본</div></div>`).join('')}
+            ${sub.images.map(img => `<div class="thumb-wrap"><a class="thumb-link" href="${img.dataUrl}" target="_blank" rel="noopener noreferrer"><img class="thumb" src="${img.dataUrl}" alt="${escapeHtml(img.name)}"></a><div class="thumb-caption">${escapeHtml(img.name)} · 제출본</div></div>`).join('')}
           </div>` : '';
         return `
           <div class="assignment-sheet">
@@ -2487,14 +2485,14 @@ try {
               </div>
             ` : ''}
             ${showUploadControls ? `
-              <form onsubmit="submitAssignmentImages(event, ${a.id})">
+              <form onsubmit="submitAssignmentImages(event, '${String(a.id).replaceAll("'", "\'")}')">
                 <div class="field" style="margin-top:14px;">
                   <label>이미지 파일 제출</label>
                   <input class="input" type="file" name="images" accept="image/*" multiple />
                   <div class="small" style="margin-top:8px;">기본 권장 기준은 하루 3장이며, 연차 사용 일수는 자동 반영되어 주간 기준 장수가 조정됩니다.</div>
                 </div>
                 <div class="btn-row">
-                  <button class="btn primary" type="submit">${sub ? '이미지 다시 제출' : '이미지 제출'}</button>
+                  <button class="btn primary" type="submit">${sub ? '이미지 추가 제출' : '이미지 제출'}</button>
                 </div>
               </form>
             ` : `
@@ -2597,7 +2595,7 @@ try {
       event.preventDefault();
       const user = currentUser();
       if (!user || user.role !== 'worker') return;
-      const assignment = assignments.find(a => a.id === assignmentId);
+      const assignment = assignments.find(a => String(a.id) === String(assignmentId));
       if (!assignment || assignment.category !== user.category) {
         alert('내 소속 과제만 제출할 수 있어.');
         return;
@@ -2614,7 +2612,11 @@ try {
       }
 
 
-const existing = findSubmissionForAssignment(user.id, assignment);
+const existing = submissions.find(s =>
+  String(s.userId) === String(user.id) &&
+  String(s.assignmentTitle) === String(assignment.title) &&
+  String(s.submittedWeek) === String(getAssignmentWeekValue(assignment))
+);
       const todayUsed = countImagesToday(user.id, existing?.id || null);
       const weekUsed = countImagesWeek(user.id, existing?.id || null);
 
@@ -3026,7 +3028,7 @@ const existing = findSubmissionForAssignment(user.id, assignment);
       let count = 0;
       rows.forEach(sub => {
         (sub.images || []).forEach((img, index) => {
-          triggerImageDownload(img.url || img.dataUrl, buildSubmissionDownloadName(week, sub, img, index), count * 180);
+          triggerImageDownload(img.dataUrl, buildSubmissionDownloadName(week, sub, img, index), count * 180);
           count += 1;
         });
       });
@@ -3074,15 +3076,15 @@ const existing = findSubmissionForAssignment(user.id, assignment);
       tbody.innerHTML = rows.length ? rows.map(({ worker, submission, requiredCount, submittedCount }) => {
         const thumbs = submission?.images?.length ? `<div class="thumbs">${submission.images.map((img, idx) => `
           <div class="thumb-wrap">
-            <img class="thumb" src="${img.url || img.dataUrl}" alt="${escapeHtml(img.name)}">
-            <a class="download-link" href="${img.url || img.dataUrl}" download="${escapeHtml(buildSubmissionDownloadName(submissionManageFilterWeek, submission, img, idx))}">다운로드</a>
+            <img class="thumb" src="${img.dataUrl}" alt="${escapeHtml(img.name)}">
+            <a class="download-link" href="${img.dataUrl}" download="${escapeHtml(buildSubmissionDownloadName(submissionManageFilterWeek, submission, img, idx))}">다운로드</a>
           </div>`).join('')}</div>` : '<div class="small">제출 이미지 없음</div>';
         const statusLabel = submission ? submission.status : '미제출';
         const statusClass = !submission ? 'danger' : (submission.status === '저장완료' ? 'ok' : 'warn');
         const processButtons = submission ? `
           <div class="btn-row" style="margin-top:0;">
-            <button class="btn outline" type="button" onclick="markSubmission('${escapeHtml(String(submission.id))}', '확인완료')">확인</button>
-            <button class="btn accent" type="button" onclick="saveSingleSubmission('${escapeHtml(String(submission.id))}')">저장</button>
+            <button class="btn outline" type="button" onclick="markSubmission(${submission.id}, '확인완료')">확인</button>
+            <button class="btn accent" type="button" onclick="saveSingleSubmission(${submission.id})">저장</button>
           </div>` : '<div class="small">제출 대기</div>';
         return `
           <tr>
@@ -3108,7 +3110,7 @@ const existing = findSubmissionForAssignment(user.id, assignment);
     }
 
     function saveSingleSubmission(id) {
-      const sub = submissions.find(s => String(s.id) === String(id));
+      const sub = submissions.find(s => s.id === id);
       if (!sub) return;
       const week = sub.submittedWeek || weekKeyFromDateStr(sub.submittedAt);
       sub.status = '저장완료';
@@ -3417,7 +3419,7 @@ assignments.unshift(updatedAssignment);
     }
 
     function markSubmission(id, status) {
-      const sub = submissions.find(s => String(s.id) === String(id));
+      const sub = submissions.find(s => s.id === id);
       if (!sub) return;
       sub.status = status;
       save(SUBMISSIONS_KEY, submissions);
