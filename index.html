@@ -708,6 +708,13 @@
   <script>
     const SUPABASE_URL = 'https://ylxshpuskimbaipscumx.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_EAGv5dX3Wf621_5P4_biVg_x4u-KguI';
+    const tableMap = {
+     users: 'users',
+     assignments: 'assignments',
+     submissions: 'submissions',
+     attendance: 'attendance',
+     companyHolidays: 'company_holidays'
+     };
     const { createClient } = supabase;
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -835,7 +842,36 @@
       }
       return JSON.parse(raw);
     }
-    function save(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+    async function save(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+
+  if (!useSupabase) return;
+
+  const tableByKey = {
+    [USERS_KEY]: 'users',
+    [ASSIGNMENTS_KEY]: 'assignments',
+    [SUBMISSIONS_KEY]: 'submissions',
+    [ATTENDANCE_KEY]: 'attendance',
+    [HOLIDAYS_KEY]: 'company_holidays'
+  };
+
+  const tableName = tableByKey[key];
+  if (!tableName) return;
+
+  const rows = Array.isArray(value) ? value : [value];
+
+  const { error } = await supabaseClient
+    .from(tableName)
+    .upsert(rows, { onConflict: 'id' });
+
+  if (error) {
+    console.error(`${tableName} 저장 실패:`, error.message);
+    alert(`${tableName} 저장 실패: ${error.message}`);
+    return;
+  }
+
+  console.log(`${tableName} 저장 완료`);
+}
     function loadSession() {
       const raw = localStorage.getItem(SESSION_KEY);
       return raw ? JSON.parse(raw) : null;
@@ -920,7 +956,66 @@
 
     let users = load(USERS_KEY, seedUsers);
     let assignments = load(ASSIGNMENTS_KEY, seedAssignments);
+    let submissions = load(SUBMISSIONS_KEY, []);
+    let attendance = load(ATTENDANCE_KEY, []);
+    let companyHolidays = load(HOLIDAYS_KEY, []);
 
+async function loadFromSupabase() {
+  try {
+    const { data: usersData } = await supabaseClient
+      .from('users')
+      .select('*');
+
+    if (usersData?.length) {
+      users = usersData;
+      save(USERS_KEY, users);
+    }
+
+    const { data: assignmentsData } = await supabaseClient
+      .from('assignments')
+      .select('*');
+
+    if (assignmentsData?.length) {
+      assignments = assignmentsData;
+      save(ASSIGNMENTS_KEY, assignments);
+    }
+
+    const { data: submissionsData } = await supabaseClient
+      .from('submissions')
+      .select('*');
+
+    if (submissionsData?.length) {
+      submissions = submissionsData;
+      save(SUBMISSIONS_KEY, submissions);
+    }
+
+    const { data: attendanceData } = await supabaseClient
+      .from('attendance')
+      .select('*');
+
+    if (attendanceData?.length) {
+      attendance = attendanceData;
+      save(ATTENDANCE_KEY, attendance);
+    }
+
+    const { data: holidaysData } = await supabaseClient
+      .from('company_holidays')
+      .select('*');
+
+    if (holidaysData?.length) {
+      companyHolidays = holidaysData;
+      save(HOLIDAYS_KEY, companyHolidays);
+    }
+
+    console.log('✅ Supabase 데이터 불러오기 완료');
+
+    renderAll();
+
+  } catch (error) {
+    console.error('❌ Supabase 로드 오류:', error);
+  }
+}
+    
     function getDefaultWorkerSetupByCategory(category = 'A') {
       if (category === 'C') {
         return { workDays: [1,2,3,4], workStart: '13:30', workEnd: '18:00', weeklyTarget: 12 };
@@ -1564,22 +1659,56 @@
     }
 
     async function syncToSupabase() {
-      try {
-        for (const user of users) {
-          await supabaseClient.from('users').upsert(user, { onConflict: 'id' });
-        }
-        for (const record of attendance) {
-          await supabaseClient.from('attendance').upsert({
-            ...record,
-            id: `${record.userId}_${record.date}`
-          }, { onConflict: 'id' });
-        }
-        console.log('✅ Supabase 동기화 완료');
-      } catch (error) {
-        console.error('❌ Supabase 동기화 오류:', error);
-      }
+  try {
+    for (const user of users) {
+      const { error } = await supabaseClient
+        .from('users')
+        .upsert(user, { onConflict: 'id' });
 
+      if (error) throw error;
     }
+
+    for (const assignment of assignments) {
+      const { error } = await supabaseClient
+        .from('assignments')
+        .upsert(assignment, { onConflict: 'id' });
+
+      if (error) throw error;
+    }
+
+    for (const submission of submissions) {
+      const { error } = await supabaseClient
+        .from('submissions')
+        .upsert(submission, { onConflict: 'id' });
+
+      if (error) throw error;
+    }
+
+    for (const record of attendance) {
+      const { error } = await supabaseClient
+        .from('attendance')
+        .upsert({
+          ...record,
+          id: `${record.userId}_${record.date}`
+        }, { onConflict: 'id' });
+
+      if (error) throw error;
+    }
+
+    for (const holiday of companyHolidays) {
+      const { error } = await supabaseClient
+        .from('company_holidays')
+        .upsert(holiday, { onConflict: 'id' });
+
+      if (error) throw error;
+    }
+
+    console.log('✅ Supabase 동기화 완료');
+  } catch (error) {
+    console.error('❌ Supabase 동기화 오류:', error.message || error);
+    alert('Supabase 저장 오류: ' + (error.message || error));
+  }
+}
     function downloadJson(filename, data) {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -2963,7 +3092,7 @@
         existing.referenceImages = referenceImages;
       } else {
         assignments.unshift({
-          id: Date.now() + Math.floor(Math.random() * 1000),
+          id: crypto.randomUUID(),
           title,
           description,
           dueDate,
@@ -3250,6 +3379,7 @@
       if (session && currentUser()) enterApp();
     }
     boot();
+    loadFromSupabase();
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
