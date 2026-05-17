@@ -1893,28 +1893,28 @@ async function loadFromSupabase() {
     function countImagesToday(userId, excludeSubmissionId = null) {
       return submissions
         .filter(s => String(s.userId) === String(userId) && s.submittedDate === today() && s.id !== excludeSubmissionId)
-        .reduce((sum, s) => sum + (s.images?.length || 0), 0);
+        .reduce((sum, s) => sum + normalizeImages(s.images).length, 0);
     }
     function normalizeImages(images) {
-
   if (Array.isArray(images)) return images;
 
   if (typeof images === 'string') {
-
     try {
-
       const parsed = JSON.parse(images);
 
-      return Array.isArray(parsed)
-        ? parsed
-        : [];
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') return [parsed];
 
     } catch {
+      if (images.startsWith('http')) {
+        return [{ name: '제출본', url: images }];
+      }
 
       return [];
-
     }
   }
+
+  if (images && typeof images === 'object') return [images];
 
   return [];
 }
