@@ -1911,7 +1911,7 @@ function chunkArray(array, chunkSize) {
 
   } catch (error) {
     console.error('❌ Supabase 동기화 오류:', error.message || error);
-    throw error; // 상위로 오류 전파
+    alert('Supabase 저장 오류: ' + (error.message || error));
   }
 }
 
@@ -1946,7 +1946,7 @@ async function uploadLocalDataToSupabase() {
 
     alert(`${totalRecords}개 레코드 업로드를 시작합니다. 데이터 양에 따라 시간이 걸릴 수 있습니다.`);
     
-    await syncToSupabase();
+    syncToSupabase();
     
     alert('✅ Supabase 업로드 완료!');
   } catch (error) {
@@ -2178,7 +2178,7 @@ function countImagesWeek(userId, targetWeek, excludeSubmissionId = null) {
 
 
 
-    async function submitDashboardImages() {
+async function submitDashboardImages() {
   const user = currentUser();
   if (!user || user.role !== 'worker') return;
   const select = document.getElementById('dashboardAssignmentSelect');
@@ -3772,14 +3772,18 @@ assignments.unshift(updatedAssignment);
 
 async function boot() {
   syncBackups();
+  
   if (useSupabase) {
-    await loadFromSupabase(); // ✅ 추가
+    await loadFromSupabase(); // 데이터 로딩 완료 후
+    renderAll(); // ✅ 데이터 로딩 완료 후 렌더링
+  } else {
+    renderAll(); // Supabase 미사용 시에만 여기서 렌더링
   }
+  
   if (session && currentUser()) enterApp();
 }
-boot();
- 
-    renderAll();
+
+boot(); // ✅ renderAll() 호출 제거
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
